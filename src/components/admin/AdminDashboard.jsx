@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useQuiz } from '../../contexts/QuizContext';
+import { useQuiz } from '../../contexts/QuizContext.jsx';
 import { 
   BookOpen, 
   Users, 
@@ -13,12 +13,12 @@ import {
   FileText,
   Clock
 } from 'lucide-react';
-import QuestionManager from './QuestionManager';
-import QuizManager from './QuizManager';
-import AnalyticsDashboard from './AnalyticsDashboard';
+import QuestionManager from './QuestionManager.jsx';
+import QuizManager from './QuizManager.jsx';
+import AnalyticsDashboard from './AnalyticsDashboard.jsx';
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'questions' | 'quizzes' | 'analytics'>('overview');
+  const [activeTab, setActiveTab] = useState('overview');
   const { questions, quizzes, attempts } = useQuiz();
 
   const tabs = [
@@ -31,7 +31,7 @@ export default function AdminDashboard() {
   const categoryStats = questions.reduce((acc, question) => {
     acc[question.category] = (acc[question.category] || 0) + 1;
     return acc;
-  }, {} as Record<string, number>);
+  }, {});
 
   const activeQuizzes = quizzes.filter(quiz => quiz.isActive).length;
   const totalAttempts = attempts.length;
@@ -69,7 +69,7 @@ export default function AdminDashboard() {
           {tabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id)}
               className={`flex items-center space-x-2 px-6 py-4 font-medium text-sm whitespace-nowrap transition-colors ${
                 activeTab === tab.id
                   ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'

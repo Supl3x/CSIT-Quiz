@@ -1,20 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { useQuiz, Question } from '../../contexts/QuizContext';
+import { useQuiz } from '../../contexts/QuizContext.jsx';
 import { X, Plus, Minus } from 'lucide-react';
 
-interface QuestionFormProps {
-  question?: Question | null;
-  onClose: () => void;
-}
-
-export default function QuestionForm({ question, onClose }: QuestionFormProps) {
+export default function QuestionForm({ question, onClose }) {
   const { addQuestion, updateQuestion } = useQuiz();
   const [formData, setFormData] = useState({
     text: '',
     options: ['', '', '', ''],
     correctAnswer: 0,
-    category: 'Programming' as Question['category'],
-    difficulty: 'Medium' as Question['difficulty'],
+    category: 'Programming',
+    difficulty: 'Medium',
     points: 10
   });
 
@@ -31,7 +26,7 @@ export default function QuestionForm({ question, onClose }: QuestionFormProps) {
     }
   }, [question]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     
     if (formData.text.trim() === '' || formData.options.some(opt => opt.trim() === '')) {
@@ -48,35 +43,33 @@ export default function QuestionForm({ question, onClose }: QuestionFormProps) {
     onClose();
   };
 
-  const updateOption = (index: number, value: string) => {
+  const handleOptionChange = (index, value) => {
     const newOptions = [...formData.options];
     newOptions[index] = value;
-    setFormData(prev => ({ ...prev, options: newOptions }));
+    setFormData({ ...formData, options: newOptions });
   };
 
   const addOption = () => {
-    if (formData.options.length < 6) {
-      setFormData(prev => ({
-        ...prev,
-        options: [...prev.options, '']
-      }));
-    }
+    setFormData({
+      ...formData,
+      options: [...formData.options, '']
+    });
   };
 
-  const removeOption = (index: number) => {
+  const removeOption = (index) => {
     if (formData.options.length > 2) {
       const newOptions = formData.options.filter((_, i) => i !== index);
-      setFormData(prev => ({
-        ...prev,
+      setFormData({
+        ...formData,
         options: newOptions,
-        correctAnswer: prev.correctAnswer >= newOptions.length ? 0 : prev.correctAnswer
-      }));
+        correctAnswer: formData.correctAnswer >= newOptions.length ? 0 : formData.correctAnswer
+      });
     }
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -84,7 +77,7 @@ export default function QuestionForm({ question, onClose }: QuestionFormProps) {
             </h2>
             <button
               onClick={onClose}
-              className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+              className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
             >
               <X className="w-6 h-6" />
             </button>
@@ -92,81 +85,65 @@ export default function QuestionForm({ question, onClose }: QuestionFormProps) {
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Question Text */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Question Text
             </label>
             <textarea
               value={formData.text}
-              onChange={(e) => setFormData(prev => ({ ...prev, text: e.target.value }))}
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white resize-none"
+              onChange={(e) => setFormData({ ...formData, text: e.target.value })}
               rows={3}
-              placeholder="Enter your question here..."
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+              placeholder="Enter your question..."
               required
             />
           </div>
 
-          {/* Options */}
           <div>
-            <div className="flex items-center justify-between mb-3">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Answer Options
-              </label>
-              {formData.options.length < 6 && (
-                <button
-                  type="button"
-                  onClick={addOption}
-                  className="flex items-center space-x-1 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Add Option</span>
-                </button>
-              )}
-            </div>
-
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Answer Options
+            </label>
             <div className="space-y-3">
               {formData.options.map((option, index) => (
                 <div key={index} className="flex items-center space-x-3">
-                  <div className="flex items-center">
-                    <input
-                      type="radio"
-                      name="correctAnswer"
-                      checked={formData.correctAnswer === index}
-                      onChange={() => setFormData(prev => ({ ...prev, correctAnswer: index }))}
-                      className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                    />
-                  </div>
-                  
-                  <div className="flex-1 flex items-center space-x-2">
-                    <span className="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center text-sm font-medium text-gray-600 dark:text-gray-300">
-                      {String.fromCharCode(65 + index)}
-                    </span>
-                    <input
-                      type="text"
-                      value={option}
-                      onChange={(e) => updateOption(index, e.target.value)}
-                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                      placeholder={`Option ${String.fromCharCode(65 + index)}`}
-                      required
-                    />
-                  </div>
-
+                  <input
+                    type="radio"
+                    name="correctAnswer"
+                    checked={formData.correctAnswer === index}
+                    onChange={() => setFormData({ ...formData, correctAnswer: index })}
+                    className="text-blue-600"
+                  />
+                  <input
+                    type="text"
+                    value={option}
+                    onChange={(e) => handleOptionChange(index, e.target.value)}
+                    placeholder={`Option ${index + 1}`}
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                    required
+                  />
                   {formData.options.length > 2 && (
                     <button
                       type="button"
                       onClick={() => removeOption(index)}
-                      className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400"
+                      className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
                     >
                       <Minus className="w-4 h-4" />
                     </button>
                   )}
                 </div>
               ))}
+              
+              <button
+                type="button"
+                onClick={addOption}
+                className="flex items-center space-x-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add Option</span>
+              </button>
             </div>
           </div>
 
-          {/* Question Metadata */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -174,7 +151,7 @@ export default function QuestionForm({ question, onClose }: QuestionFormProps) {
               </label>
               <select
                 value={formData.category}
-                onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value as Question['category'] }))}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
               >
                 <option value="Programming">Programming</option>
@@ -191,7 +168,7 @@ export default function QuestionForm({ question, onClose }: QuestionFormProps) {
               </label>
               <select
                 value={formData.difficulty}
-                onChange={(e) => setFormData(prev => ({ ...prev, difficulty: e.target.value as Question['difficulty'] }))}
+                onChange={(e) => setFormData({ ...formData, difficulty: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
               >
                 <option value="Easy">Easy</option>
@@ -207,28 +184,28 @@ export default function QuestionForm({ question, onClose }: QuestionFormProps) {
               <input
                 type="number"
                 value={formData.points}
-                onChange={(e) => setFormData(prev => ({ ...prev, points: parseInt(e.target.value) || 0 }))}
+                onChange={(e) => setFormData({ ...formData, points: parseInt(e.target.value) })}
                 min="1"
-                max="100"
+                max="20"
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                required
               />
             </div>
           </div>
 
-          {/* Form Actions */}
           <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-gray-700">
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+              className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
-              {question ? 'Update Question' : 'Create Question'}
+              {question ? 'Update Question' : 'Add Question'}
             </button>
           </div>
         </form>

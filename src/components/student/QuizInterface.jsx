@@ -1,27 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { useQuiz, Question } from '../../contexts/QuizContext';
-import { useAuth } from '../../contexts/AuthContext';
+import { useQuiz } from '../../contexts/QuizContext.jsx';
+import { useAuth } from '../../contexts/AuthContext.jsx';
 import { Clock, ChevronLeft, ChevronRight, Flag, CheckCircle, XCircle } from 'lucide-react';
 
-interface QuizInterfaceProps {
-  quizId: string;
-  onComplete: () => void;
-  onCancel: () => void;
-}
-
-export default function QuizInterface({ quizId, onComplete, onCancel }: QuizInterfaceProps) {
+export default function QuizInterface({ quizId, onComplete, onCancel }) {
   const { user } = useAuth();
   const { quizzes, questions, submitQuizAttempt } = useQuiz();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [answers, setAnswers] = useState<{ [key: string]: number }>({});
+  const [answers, setAnswers] = useState({});
   const [timeLeft, setTimeLeft] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [quizQuestions, setQuizQuestions] = useState<Question[]>([]);
+  const [quizQuestions, setQuizQuestions] = useState([]);
   const [showResults, setShowResults] = useState(false);
-  const [results, setResults] = useState<any>(null);
+  const [results, setResults] = useState(null);
 
   const quiz = quizzes.find(q => q.id === quizId);
-  const startTime = React.useRef<number>(Date.now());
+  const startTime = React.useRef(Date.now());
 
   useEffect(() => {
     if (quiz) {
@@ -45,7 +39,7 @@ export default function QuizInterface({ quizId, onComplete, onCancel }: QuizInte
     }
   }, [timeLeft]);
 
-  const handleAnswerSelect = (questionId: string, answerIndex: number) => {
+  const handleAnswerSelect = (questionId, answerIndex) => {
     setAnswers(prev => ({ ...prev, [questionId]: answerIndex }));
   };
 
@@ -58,7 +52,7 @@ export default function QuizInterface({ quizId, onComplete, onCancel }: QuizInte
     
     // Calculate score and category breakdown
     let correctAnswers = 0;
-    const categoryScores: { [category: string]: { correct: number; total: number } } = {};
+    const categoryScores = {};
     
     quizQuestions.forEach(question => {
       const isCorrect = answers[question.id] === question.correctAnswer;
@@ -106,7 +100,7 @@ export default function QuizInterface({ quizId, onComplete, onCancel }: QuizInte
     setIsSubmitting(false);
   };
 
-  const formatTime = (seconds: number) => {
+  const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
@@ -185,7 +179,7 @@ export default function QuizInterface({ quizId, onComplete, onCancel }: QuizInte
           <div className="mb-8">
             <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Performance by Category</h3>
             <div className="space-y-3">
-              {Object.entries(results.categoryScores).map(([category, scores]: [string, any]) => {
+              {Object.entries(results.categoryScores).map(([category, scores]) => {
                 const percentage = Math.round((scores.correct / scores.total) * 100);
                 return (
                   <div key={category}>
@@ -228,7 +222,7 @@ export default function QuizInterface({ quizId, onComplete, onCancel }: QuizInte
               )}
               
               {Object.entries(results.categoryScores)
-                .filter(([_, scores]: [string, any]) => scores.correct / scores.total < 0.6)
+                .filter(([_, scores]) => scores.correct / scores.total < 0.6)
                 .map(([category]) => (
                   <p key={category}>
                     • Consider reviewing <strong>{category}</strong> topics

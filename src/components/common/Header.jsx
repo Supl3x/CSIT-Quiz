@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext.jsx';
 import { GraduationCap, LogOut, Menu, X, Moon, Sun } from 'lucide-react';
 
 export default function Header() {

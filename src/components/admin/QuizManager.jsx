@@ -1,25 +1,25 @@
 import { useState } from 'react';
-import { useQuiz, Quiz } from '../../contexts/QuizContext';
+import { useQuiz } from '../../contexts/QuizContext.jsx';
 import { Plus, Edit, Trash2, Play, Pause, Clock, FileText } from 'lucide-react';
-import QuizForm from './QuizForm';
+import QuizForm from './QuizForm.jsx';
 
 export default function QuizManager() {
   const { quizzes, deleteQuiz, updateQuiz, getQuizStatistics } = useQuiz();
   const [showForm, setShowForm] = useState(false);
-  const [editingQuiz, setEditingQuiz] = useState<Quiz | null>(null);
+  const [editingQuiz, setEditingQuiz] = useState(null);
 
-  const handleEdit = (quiz: Quiz) => {
+  const handleEdit = (quiz) => {
     setEditingQuiz(quiz);
     setShowForm(true);
   };
 
-  const handleDelete = (quizId: string) => {
+  const handleDelete = (quizId) => {
     if (confirm('Are you sure you want to delete this quiz?')) {
       deleteQuiz(quizId);
     }
   };
 
-  const toggleQuizStatus = (quiz: Quiz) => {
+  const toggleQuizStatus = (quiz) => {
     updateQuiz(quiz.id, { isActive: !quiz.isActive });
   };
 

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
-import { useQuiz } from '../../contexts/QuizContext';
+import { useAuth } from '../../contexts/AuthContext.jsx';
+import { useQuiz } from '../../contexts/QuizContext.jsx';
 import { 
   BookOpen, 
   Clock, 
@@ -12,14 +12,14 @@ import {
   Trophy,
   Calendar
 } from 'lucide-react';
-import QuizInterface from './QuizInterface';
-import StudentAnalytics from './StudentAnalytics';
+import QuizInterface from './QuizInterface.jsx';
+import StudentAnalytics from './StudentAnalytics.jsx';
 
 export default function StudentDashboard() {
   const { user } = useAuth();
   const { quizzes, attempts, getStudentAttempts } = useQuiz();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'quizzes' | 'analytics'>('dashboard');
-  const [selectedQuiz, setSelectedQuiz] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [selectedQuiz, setSelectedQuiz] = useState(null);
 
   const studentAttempts = getStudentAttempts(user?.id || '');
   const activeQuizzes = quizzes.filter(quiz => quiz.isActive);
@@ -91,7 +91,7 @@ export default function StudentDashboard() {
           {tabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id)}
               className={`flex items-center space-x-2 px-6 py-4 font-medium text-sm whitespace-nowrap transition-colors ${
                 activeTab === tab.id
                   ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'

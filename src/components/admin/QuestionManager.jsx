@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
-import { useQuiz, Question } from '../../contexts/QuizContext';
+import { useQuiz } from '../../contexts/QuizContext.jsx';
 import { Plus, Edit, Trash2, Search, Filter } from 'lucide-react';
-import QuestionForm from './QuestionForm';
+import QuestionForm from './QuestionForm.jsx';
 
 export default function QuestionManager() {
   const { questions, deleteQuestion } = useQuiz();
   const [showForm, setShowForm] = useState(false);
-  const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
+  const [editingQuestion, setEditingQuestion] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<string>('All');
-  const [difficultyFilter, setDifficultyFilter] = useState<string>('All');
+  const [categoryFilter, setCategoryFilter] = useState('All');
+  const [difficultyFilter, setDifficultyFilter] = useState('All');
 
   const categories = ['All', 'Programming', 'DBMS', 'Networks', 'AI', 'Cybersecurity'];
   const difficulties = ['All', 'Easy', 'Medium', 'Hard'];
@@ -22,12 +22,12 @@ export default function QuestionManager() {
     return matchesSearch && matchesCategory && matchesDifficulty;
   });
 
-  const handleEdit = (question: Question) => {
+  const handleEdit = (question) => {
     setEditingQuestion(question);
     setShowForm(true);
   };
 
-  const handleDelete = (questionId: string) => {
+  const handleDelete = (questionId) => {
     if (confirm('Are you sure you want to delete this question?')) {
       deleteQuestion(questionId);
     }
@@ -138,7 +138,7 @@ export default function QuestionManager() {
                     </div>
 
                     <div className="space-y-1 text-sm text-gray-600 dark:text-gray-300">
-                      {question.options.map((option, index) => (
+                      {question.options && question.options.map((option, index) => (
                         <div key={index} className={`flex items-center space-x-2 ${
                           index === question.correctAnswer ? 'text-green-600 dark:text-green-400 font-medium' : ''
                         }`}>

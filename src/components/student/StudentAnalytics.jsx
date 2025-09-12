@@ -1,6 +1,6 @@
 import React from 'react';
-import { useAuth } from '../../contexts/AuthContext';
-import { useQuiz } from '../../contexts/QuizContext';
+import { useAuth } from '../../contexts/AuthContext.jsx';
+import { useQuiz } from '../../contexts/QuizContext.jsx';
 import { 
   TrendingUp, 
   Target, 
@@ -31,7 +31,7 @@ export default function StudentAnalytics() {
 
   // Category-wise performance
   const categoryPerformance = studentAttempts.reduce((acc, attempt) => {
-    Object.entries(attempt.categoryScores).forEach(([category, scores]: [string, any]) => {
+    Object.entries(attempt.categoryScores).forEach(([category, scores]) => {
       if (!acc[category]) {
         acc[category] = { correct: 0, total: 0, attempts: 0, totalScore: 0 };
       }
@@ -41,7 +41,7 @@ export default function StudentAnalytics() {
       acc[category].totalScore += (scores.correct / scores.total) * 100;
     });
     return acc;
-  }, {} as Record<string, any>);
+  }, {});
 
   // Calculate average for each category
   Object.keys(categoryPerformance).forEach(category => {

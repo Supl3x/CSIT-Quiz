@@ -1,13 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useQuiz, Quiz, Question } from '../../contexts/QuizContext';
+import { useQuiz } from '../../contexts/QuizContext.jsx';
 import { X, Search } from 'lucide-react';
 
-interface QuizFormProps {
-  quiz?: Quiz | null;
-  onClose: () => void;
-}
-
-export default function QuizForm({ quiz, onClose }: QuizFormProps) {
+export default function QuizForm({ quiz, onClose }) {
   const { addQuiz, updateQuiz, questions } = useQuiz();
   const [formData, setFormData] = useState({
     title: '',
@@ -18,9 +13,9 @@ export default function QuizForm({ quiz, onClose }: QuizFormProps) {
     createdBy: '1' // This would be the current admin's ID
   });
 
-  const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
+  const [selectedQuestions, setSelectedQuestions] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<string>('All');
+  const [categoryFilter, setCategoryFilter] = useState('All');
 
   useEffect(() => {
     if (quiz) {
@@ -44,7 +39,7 @@ export default function QuizForm({ quiz, onClose }: QuizFormProps) {
     return matchesSearch && matchesCategory;
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     
     if (formData.title.trim() === '' || formData.category === '') {
@@ -66,7 +61,7 @@ export default function QuizForm({ quiz, onClose }: QuizFormProps) {
     onClose();
   };
 
-  const handleQuestionSelect = (questionId: string) => {
+  const handleQuestionSelect = (questionId) => {
     setSelectedQuestions(prev => {
       if (prev.includes(questionId)) {
         return prev.filter(id => id !== questionId);

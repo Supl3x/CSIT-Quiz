@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { QuizProvider } from './contexts/QuizContext';
-import LoginPage from './components/auth/LoginPage';
-import AdminDashboard from './components/admin/AdminDashboard';
-import StudentDashboard from './components/student/StudentDashboard';
-import Header from './components/common/Header';
-import LoadingSpinner from './components/common/LoadingSpinner';
+import { AuthProvider, useAuth } from './contexts/AuthContext.jsx';
+import { QuizProvider } from './contexts/QuizContext.jsx';
+import LoginPage from './components/auth/LoginPage.jsx';
+import AdminDashboard from './components/admin/AdminDashboard.jsx';
+import StudentDashboard from './components/student/StudentDashboard.jsx';
+import Header from './components/common/Header.jsx';
+import LoadingSpinner from './components/common/LoadingSpinner.jsx';
 
 function AppContent() {
   const { user, loading } = useAuth();

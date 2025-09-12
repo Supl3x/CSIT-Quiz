@@ -1,24 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-interface User {
-  id: string;
-  email: string;
-  name: string;
-  role: 'admin' | 'student';
-  department?: string;
-}
-
-interface AuthContextType {
-  user: User | null;
-  login: (email: string, password: string) => Promise<boolean>;
-  logout: () => void;
-  loading: boolean;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext(undefined);
 
 // Mock users for demo - in production, this would be handled by a backend
-const mockUsers: User[] = [
+const mockUsers = [
   {
     id: '1',
     email: 'admin@csit.edu',
@@ -35,8 +20,8 @@ const mockUsers: User[] = [
   }
 ];
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -48,7 +33,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(false);
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email, password) => {
     // Mock authentication - in production, this would call your backend
     const foundUser = mockUsers.find(u => u.email === email);
     if (foundUser) {

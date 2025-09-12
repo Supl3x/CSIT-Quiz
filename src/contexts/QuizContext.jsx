@@ -1,57 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-export interface Question {
-  id: string;
-  text: string;
-  options: string[];
-  correctAnswer: number;
-  category: 'Programming' | 'DBMS' | 'Networks' | 'AI' | 'Cybersecurity';
-  difficulty: 'Easy' | 'Medium' | 'Hard';
-  points: number;
-}
-
-export interface Quiz {
-  id: string;
-  title: string;
-  category: string;
-  duration: number; // in minutes
-  totalQuestions: number;
-  isActive: boolean;
-  createdBy: string;
-  createdAt: Date;
-}
-
-export interface QuizAttempt {
-  id: string;
-  quizId: string;
-  studentId: string;
-  answers: { [questionId: string]: number };
-  score: number;
-  totalQuestions: number;
-  timeSpent: number; // in seconds
-  completedAt: Date;
-  categoryScores: { [category: string]: { correct: number; total: number } };
-}
-
-interface QuizContextType {
-  questions: Question[];
-  quizzes: Quiz[];
-  attempts: QuizAttempt[];
-  addQuestion: (question: Omit<Question, 'id'>) => void;
-  updateQuestion: (id: string, question: Partial<Question>) => void;
-  deleteQuestion: (id: string) => void;
-  addQuiz: (quiz: Omit<Quiz, 'id' | 'createdAt'>) => void;
-  updateQuiz: (id: string, quiz: Partial<Quiz>) => void;
-  deleteQuiz: (id: string) => void;
-  submitQuizAttempt: (attempt: Omit<QuizAttempt, 'id' | 'completedAt'>) => void;
-  getStudentAttempts: (studentId: string) => QuizAttempt[];
-  getQuizStatistics: (quizId: string) => any;
-}
-
-const QuizContext = createContext<QuizContextType | undefined>(undefined);
+const QuizContext = createContext(undefined);
 
 // Mock data for demo
-const initialQuestions: Question[] = [
+const initialQuestions = [
   {
     id: '1',
     text: 'Which of the following is NOT a programming paradigm?',
@@ -99,7 +51,7 @@ const initialQuestions: Question[] = [
   }
 ];
 
-const initialQuizzes: Quiz[] = [
+const initialQuizzes = [
   {
     id: '1',
     title: 'Programming Fundamentals',
@@ -122,10 +74,10 @@ const initialQuizzes: Quiz[] = [
   }
 ];
 
-export function QuizProvider({ children }: { children: React.ReactNode }) {
-  const [questions, setQuestions] = useState<Question[]>(initialQuestions);
-  const [quizzes, setQuizzes] = useState<Quiz[]>(initialQuizzes);
-  const [attempts, setAttempts] = useState<QuizAttempt[]>([]);
+export function QuizProvider({ children }) {
+  const [questions, setQuestions] = useState(initialQuestions);
+  const [quizzes, setQuizzes] = useState(initialQuizzes);
+  const [attempts, setAttempts] = useState([]);
 
   useEffect(() => {
     // Load data from localStorage
@@ -138,7 +90,7 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
     }
     if (savedQuizzes) {
       // Parse and convert createdAt to Date
-      const quizzes = JSON.parse(savedQuizzes).map((quiz: any) => ({
+      const quizzes = JSON.parse(savedQuizzes).map((quiz) => ({
         ...quiz,
         createdAt: quiz.createdAt ? new Date(quiz.createdAt) : new Date()
       }));
@@ -146,7 +98,7 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
     }
     if (savedAttempts) {
       // Parse and convert completedAt to Date
-      const attempts = JSON.parse(savedAttempts).map((attempt: any) => ({
+      const attempts = JSON.parse(savedAttempts).map((attempt) => ({
         ...attempt,
         completedAt: attempt.completedAt ? new Date(attempt.completedAt) : new Date()
       }));
@@ -166,33 +118,33 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('csit-quiz-attempts', JSON.stringify(attempts));
   }, [attempts]);
 
-  const addQuestion = (question: Omit<Question, 'id'>) => {
+  const addQuestion = (question) => {
     const newQuestion = { ...question, id: Date.now().toString() };
     setQuestions(prev => [...prev, newQuestion]);
   };
 
-  const updateQuestion = (id: string, question: Partial<Question>) => {
+  const updateQuestion = (id, question) => {
     setQuestions(prev => prev.map(q => q.id === id ? { ...q, ...question } : q));
   };
 
-  const deleteQuestion = (id: string) => {
+  const deleteQuestion = (id) => {
     setQuestions(prev => prev.filter(q => q.id !== id));
   };
 
-  const addQuiz = (quiz: Omit<Quiz, 'id' | 'createdAt'>) => {
+  const addQuiz = (quiz) => {
     const newQuiz = { ...quiz, id: Date.now().toString(), createdAt: new Date() };
     setQuizzes(prev => [...prev, newQuiz]);
   };
 
-  const updateQuiz = (id: string, quiz: Partial<Quiz>) => {
+  const updateQuiz = (id, quiz) => {
     setQuizzes(prev => prev.map(q => q.id === id ? { ...q, ...quiz } : q));
   };
 
-  const deleteQuiz = (id: string) => {
+  const deleteQuiz = (id) => {
     setQuizzes(prev => prev.filter(q => q.id !== id));
   };
 
-  const submitQuizAttempt = (attempt: Omit<QuizAttempt, 'id' | 'completedAt'>) => {
+  const submitQuizAttempt = (attempt) => {
     const newAttempt = { 
       ...attempt, 
       id: Date.now().toString(), 
@@ -201,11 +153,11 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
     setAttempts(prev => [...prev, newAttempt]);
   };
 
-  const getStudentAttempts = (studentId: string) => {
+  const getStudentAttempts = (studentId) => {
     return attempts.filter(attempt => attempt.studentId === studentId);
   };
 
-  const getQuizStatistics = (quizId: string) => {
+  const getQuizStatistics = (quizId) => {
     const quizAttempts = attempts.filter(attempt => attempt.quizId === quizId);
     if (quizAttempts.length === 0) return null;
 

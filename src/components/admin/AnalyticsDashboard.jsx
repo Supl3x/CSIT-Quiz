@@ -1,5 +1,5 @@
 import React from 'react';
-import { useQuiz } from '../../contexts/QuizContext';
+import { useQuiz } from '../../contexts/QuizContext.jsx';
 import { 
   BarChart3, 
   TrendingUp, 
@@ -32,7 +32,7 @@ export default function AnalyticsDashboard() {
     }
     acc[question.category].questions++;
     return acc;
-  }, {} as Record<string, any>);
+  }, {});
 
   // Calculate category-wise performance from attempts
   attempts.forEach(attempt => {
@@ -50,7 +50,7 @@ export default function AnalyticsDashboard() {
   const difficultyStats = questions.reduce((acc, question) => {
     acc[question.difficulty] = (acc[question.difficulty] || 0) + 1;
     return acc;
-  }, {} as Record<string, number>);
+  }, {});
 
   // Performance metrics
   const averageScore = attempts.length > 0 
