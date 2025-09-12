@@ -1,122 +1,123 @@
-import React, { useState, useEffect } from 'react';
-import { useQuiz } from '../../contexts/QuizContext.jsx';
-import { X, Search } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import QuestionForm from "./QuestionForm.jsx";
 
-export default function QuizForm({ quiz, onClose }) {
-  const { addQuiz, updateQuiz, questions } = useQuiz();
-  const [formData, setFormData] = useState({
-    title: '',
-    category: '',
-    duration: 30,
-    totalQuestions: 10,
-    isActive: true,
-    createdBy: '1' // This would be the current admin's ID
-  });
-
-  const [selectedQuestions, setSelectedQuestions] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('All');
+export default function QuizForm({ quiz, onSave, onClose }) {
+  const [title, setTitle] = useState("");
+  const [category, setCategory] = useState("Programming");
+  const [duration, setDuration] = useState(10);
+  const [questions, setQuestions] = useState([]);
+  const [editingQuestion, setEditingQuestion] = useState(null);
+  const [showQuestionForm, setShowQuestionForm] = useState(false);
 
   useEffect(() => {
     if (quiz) {
-      setFormData({
-        title: quiz.title,
-        category: quiz.category,
-        duration: quiz.duration,
-        totalQuestions: quiz.totalQuestions,
-        isActive: quiz.isActive,
-        createdBy: quiz.createdBy
-      });
+      setTitle(quiz.title);
+      setCategory(quiz.category);
+      setDuration(quiz.duration);
+      setQuestions(quiz.questions || []);
     }
   }, [quiz]);
 
-  const categories = ['All', 'Programming', 'DBMS', 'Networks', 'AI', 'Cybersecurity'];
-
-  const filteredQuestions = questions.filter(question => {
-    const matchesSearch = question.text.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = categoryFilter === 'All' || question.category === categoryFilter;
-    
-    return matchesSearch && matchesCategory;
-  });
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    
-    if (formData.title.trim() === '' || formData.category === '') {
-      alert('Please fill in all required fields');
-      return;
-    }
-
-    if (formData.totalQuestions > questions.length) {
-      alert(`Not enough questions available. Maximum available: ${questions.length}`);
-      return;
-    }
-
-    if (quiz) {
-      updateQuiz(quiz.id, formData);
+  // Save a question (new or edited)
+  const handleSaveQuestion = (q) => {
+    if (editingQuestion) {
+      // Edit existing question
+      setQuestions((prev) =>
+        prev.map((item) => (item.id === q.id ? q : item))
+      );
     } else {
-      addQuiz(formData);
+      // Add new question
+      setQuestions((prev) => [...prev, q]);
     }
-    
-    onClose();
+    setShowQuestionForm(false);
+    setEditingQuestion(null);
   };
 
-  const handleQuestionSelect = (questionId) => {
-    setSelectedQuestions(prev => {
-      if (prev.includes(questionId)) {
-        return prev.filter(id => id !== questionId);
-      } else if (prev.length < formData.totalQuestions) {
-        return [...prev, questionId];
-      }
-      return prev;
-    });
+  const handleEditQuestion = (q) => {
+    setEditingQuestion(q);
+    setShowQuestionForm(true);
+  };
+
+  const handleDeleteQuestion = (id) => {
+    setQuestions((prev) => prev.filter((q) => q.id !== id));
+  };
+
+  const handleSaveQuiz = (e) => {
+    e.preventDefault();
+
+    if (!title.trim()) {
+      alert("Please enter quiz title");
+      return;
+    }
+
+    if (questions.length === 0) {
+      alert("Please add at least one question");
+      return;
+    }
+
+    const newQuiz = {
+      id: quiz?.id || Date.now(),
+      title,
+      category,
+      duration,
+      questions,
+      isActive: quiz?.isActive || false,
+      createdAt: quiz?.createdAt || new Date(),
+    };
+
+    onSave(newQuiz);
+    resetForm();
+  };
+
+  const resetForm = () => {
+    setTitle("");
+    setCategory("Programming");
+    setDuration(10);
+    setQuestions([]);
+    setEditingQuestion(null);
+    setShowQuestionForm(false);
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              {quiz ? 'Edit Quiz' : 'Create New Quiz'}
-            </h2>
-            <button
-              onClick={onClose}
-              className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-            >
-              <X className="w-6 h-6" />
-            </button>
-          </div>
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+            {quiz ? "Edit Quiz" : "Create New Quiz"}
+          </h2>
+          <button
+            onClick={onClose}
+            className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+          >
+            ✖
+          </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Basic Quiz Information */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Quiz Title *
-              </label>
-              <input
-                type="text"
-                value={formData.title}
-                onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                placeholder="Enter quiz title"
-                required
-              />
-            </div>
+        <form onSubmit={handleSaveQuiz} className="p-6 space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Quiz Title
+            </label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+              placeholder="Enter quiz title"
+              required
+            />
+          </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Category *
+                Category
               </label>
               <select
-                value={formData.category}
-                onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                required
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
               >
-                <option value="">Select Category</option>
                 <option value="Programming">Programming</option>
                 <option value="DBMS">DBMS</option>
                 <option value="Networks">Networks</option>
@@ -131,146 +132,91 @@ export default function QuizForm({ quiz, onClose }) {
               </label>
               <input
                 type="number"
-                value={formData.duration}
-                onChange={(e) => setFormData(prev => ({ ...prev, duration: parseInt(e.target.value) || 30 }))}
-                min="5"
-                max="180"
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                value={duration}
+                onChange={(e) => setDuration(parseInt(e.target.value))}
+                min={1}
+                max={180}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
               />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Number of Questions
-              </label>
-              <input
-                type="number"
-                value={formData.totalQuestions}
-                onChange={(e) => setFormData(prev => ({ ...prev, totalQuestions: parseInt(e.target.value) || 10 }))}
-                min="1"
-                max={questions.length}
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-              />
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Maximum available: {questions.length}
-              </p>
             </div>
           </div>
 
-          {/* Quiz Status */}
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="isActive"
-              checked={formData.isActive}
-              onChange={(e) => setFormData(prev => ({ ...prev, isActive: e.target.checked }))}
-              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-            />
-            <label htmlFor="isActive" className="ml-2 text-sm text-gray-700 dark:text-gray-300">
-              Make quiz active immediately
-            </label>
-          </div>
-
-          {/* Question Selection */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Available Questions ({questions.length})
-            </h3>
-            
-            {/* Question Filters */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search questions..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                />
-              </div>
-
-              <select
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Questions
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowQuestionForm(true)}
+                className="flex items-center space-x-2 bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700"
               >
-                {categories.map(category => (
-                  <option key={category} value={category}>{category}</option>
-                ))}
-              </select>
+                + Add Question
+              </button>
             </div>
 
-            {/* Questions List */}
-            <div className="border border-gray-200 dark:border-gray-600 rounded-lg max-h-64 overflow-y-auto">
-              {filteredQuestions.length === 0 ? (
-                <div className="p-4 text-center text-gray-500 dark:text-gray-400">
-                  No questions found matching your criteria.
-                </div>
-              ) : (
-                <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {filteredQuestions.map((question) => (
-                    <div key={question.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700">
-                      <div className="flex items-start space-x-3">
-                        <input
-                          type="checkbox"
-                          checked={selectedQuestions.includes(question.id)}
-                          onChange={() => handleQuestionSelect(question.id)}
-                          disabled={!selectedQuestions.includes(question.id) && selectedQuestions.length >= formData.totalQuestions}
-                          className="w-4 h-4 mt-1 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                        />
-                        <div className="flex-1">
-                          <p className="text-sm text-gray-900 dark:text-white font-medium">
-                            {question.text}
-                          </p>
-                          <div className="flex items-center space-x-2 mt-1">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              question.category === 'Programming' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
-                              question.category === 'DBMS' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                              question.category === 'Networks' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
-                              question.category === 'AI' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' :
-                              'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                            }`}>
-                              {question.category}
-                            </span>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              question.difficulty === 'Easy' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                              question.difficulty === 'Medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
-                              'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                            }`}>
-                              {question.difficulty}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+            <div className="space-y-2">
+              {questions.length === 0 && (
+                <p className="text-gray-500 dark:text-gray-400">
+                  No questions added yet.
+                </p>
               )}
+              {questions.map((q, idx) => (
+                <div
+                  key={q.id}
+                  className="flex items-center justify-between bg-gray-100 dark:bg-gray-700 p-2 rounded-lg"
+                >
+                  <span>
+                    {idx + 1}. {q.text} ({q.type})
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleEditQuestion(q)}
+                      className="text-blue-600 dark:text-blue-400"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteQuestion(q.id)}
+                      className="text-red-600 dark:text-red-400"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
-            
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-              Selected: {selectedQuestions.length}/{formData.totalQuestions}
-            </p>
           </div>
 
-          {/* Form Actions */}
-          <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex justify-end gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+              className="px-4 py-2 bg-gray-400 text-white rounded-lg"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
-              {quiz ? 'Update Quiz' : 'Create Quiz'}
+              Save Quiz
             </button>
           </div>
         </form>
+
+        {showQuestionForm && (
+          <QuestionForm
+            onSave={handleSaveQuestion}
+            editingQuestion={editingQuestion}
+            onClose={() => {
+              setShowQuestionForm(false);
+              setEditingQuestion(null);
+            }}
+          />
+        )}
       </div>
     </div>
   );
