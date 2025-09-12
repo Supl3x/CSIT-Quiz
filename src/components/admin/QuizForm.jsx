@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useQuiz } from '../../contexts/QuizContext.jsx';
-import { X, Search } from 'lucide-react';
+import { X, Search, Shuffle } from 'lucide-react';
 
 export default function QuizForm({ quiz, onClose }) {
-  const { addQuiz, updateQuiz, questions } = useQuiz();
+  const { addQuiz, updateQuiz, questions, getAvailableTopics, generateRandomQuestionSelection, getQuestionsByTopics } = useQuiz();
   const [formData, setFormData] = useState({
     title: '',
     category: '',
@@ -16,6 +16,8 @@ export default function QuizForm({ quiz, onClose }) {
   const [selectedQuestions, setSelectedQuestions] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
+  const [selectedTopics, setSelectedTopics] = useState([]);
+  const [isGenerationMode, setIsGenerationMode] = useState(false);
 
   useEffect(() => {
     if (quiz) {
@@ -31,6 +33,7 @@ export default function QuizForm({ quiz, onClose }) {
   }, [quiz]);
 
   const categories = ['All', 'Programming', 'DBMS', 'Networks', 'AI', 'Cybersecurity'];
+  const availableTopics = getAvailableTopics();
 
   const filteredQuestions = questions.filter(question => {
     const matchesSearch = question.text.toLowerCase().includes(searchTerm.toLowerCase());
@@ -38,6 +41,45 @@ export default function QuizForm({ quiz, onClose }) {
     
     return matchesSearch && matchesCategory;
   });
+
+  const handleTopicToggle = (topic) => {
+    setSelectedTopics(prev => {
+      if (prev.includes(topic)) {
+        return prev.filter(t => t !== topic);
+      } else {
+        return [...prev, topic];
+      }
+    });
+  };
+
+  const handleGenerateQuiz = () => {
+    if (selectedTopics.length === 0) {
+      alert('Please select at least one topic to generate a quiz.');
+      return;
+    }
+
+    const availableQuestionsFromTopics = getQuestionsByTopics(selectedTopics);
+    
+    if (availableQuestionsFromTopics.length === 0) {
+      alert('No questions available for the selected topics.');
+      return;
+    }
+
+    if (formData.totalQuestions > availableQuestionsFromTopics.length) {
+      alert(`Not enough questions available for selected topics. Maximum available: ${availableQuestionsFromTopics.length}`);
+      return;
+    }
+
+    const randomlySelectedQuestions = generateRandomQuestionSelection(selectedTopics, formData.totalQuestions);
+    setSelectedQuestions(randomlySelectedQuestions);
+    setIsGenerationMode(true);
+  };
+
+  const resetSelection = () => {
+    setSelectedQuestions([]);
+    setSelectedTopics([]);
+    setIsGenerationMode(false);
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -47,15 +89,25 @@ export default function QuizForm({ quiz, onClose }) {
       return;
     }
 
-    if (formData.totalQuestions > questions.length) {
-      alert(`Not enough questions available. Maximum available: ${questions.length}`);
+    if (selectedQuestions.length === 0) {
+      alert('Please select questions for the quiz or generate a quiz from topics.');
       return;
     }
 
+    if (selectedQuestions.length !== formData.totalQuestions) {
+      alert(`Please select exactly ${formData.totalQuestions} questions.`);
+      return;
+    }
+
+    const quizData = {
+      ...formData,
+      questions: selectedQuestions
+    };
+
     if (quiz) {
-      updateQuiz(quiz.id, formData);
+      updateQuiz(quiz.id, quizData);
     } else {
-      addQuiz(formData);
+      addQuiz(quizData);
     }
     
     onClose();
@@ -171,81 +223,201 @@ export default function QuizForm({ quiz, onClose }) {
             </label>
           </div>
 
-          {/* Question Selection */}
-          <div>
+          {/* Quiz Generation Section */}
+          <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-6">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Available Questions ({questions.length})
+              Generate Quiz from Topics
             </h3>
             
-            {/* Question Filters */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search questions..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                />
-              </div>
-
-              <select
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-              >
-                {categories.map(category => (
-                  <option key={category} value={category}>{category}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Questions List */}
-            <div className="border border-gray-200 dark:border-gray-600 rounded-lg max-h-64 overflow-y-auto">
-              {filteredQuestions.length === 0 ? (
-                <div className="p-4 text-center text-gray-500 dark:text-gray-400">
-                  No questions found matching your criteria.
-                </div>
-              ) : (
-                <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {filteredQuestions.map((question) => (
-                    <div key={question.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700">
-                      <div className="flex items-start space-x-3">
-                        <input
-                          type="checkbox"
-                          checked={selectedQuestions.includes(question.id)}
-                          onChange={() => handleQuestionSelect(question.id)}
-                          disabled={!selectedQuestions.includes(question.id) && selectedQuestions.length >= formData.totalQuestions}
-                          className="w-4 h-4 mt-1 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                        />
-                        <div className="flex-1">
-                          <p className="text-sm text-gray-900 dark:text-white font-medium">
-                            {question.text}
-                          </p>
-                          <div className="flex items-center space-x-2 mt-1">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              question.category === 'Programming' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
-                              question.category === 'DBMS' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                              question.category === 'Networks' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
-                              question.category === 'AI' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' :
-                              'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                            }`}>
-                              {question.category}
-                            </span>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              question.difficulty === 'Easy' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                              question.difficulty === 'Medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
-                              'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                            }`}>
-                              {question.difficulty}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Select Topics
+                </label>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {availableTopics.map(topic => (
+                    <div key={topic} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id={`topic-${topic}`}
+                        checked={selectedTopics.includes(topic)}
+                        onChange={() => handleTopicToggle(topic)}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <label 
+                        htmlFor={`topic-${topic}`} 
+                        className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
+                      >
+                        {topic}
+                      </label>
                     </div>
                   ))}
                 </div>
+                {selectedTopics.length > 0 && (
+                  <p className="text-sm text-blue-600 dark:text-blue-400 mt-2">
+                    Available questions from selected topics: {getQuestionsByTopics(selectedTopics).length}
+                  </p>
+                )}
+              </div>
+              
+              <div className="flex items-center space-x-4">
+                <button
+                  type="button"
+                  onClick={handleGenerateQuiz}
+                  disabled={selectedTopics.length === 0}
+                  className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  <Shuffle className="w-4 h-4" />
+                  <span>Generate Quiz</span>
+                </button>
+                
+                {isGenerationMode && (
+                  <button
+                    type="button"
+                    onClick={resetSelection}
+                    className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
+                  >
+                    Reset Selection
+                  </button>
+                )}
+              </div>
+              
+              {isGenerationMode && (
+                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                  <p className="text-sm text-green-800 dark:text-green-200">
+                    ✅ Quiz generated successfully! {selectedQuestions.length} questions have been randomly selected from your chosen topics.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Question Selection */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              {isGenerationMode ? 'Generated Questions' : 'Manual Question Selection'} ({questions.length} total available)
+            </h3>
+            
+            {!isGenerationMode && (
+              <>
+                {/* Question Filters */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search questions..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                    />
+                  </div>
+
+                  <select
+                    value={categoryFilter}
+                    onChange={(e) => setCategoryFilter(e.target.value)}
+                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                  >
+                    {categories.map(category => (
+                      <option key={category} value={category}>{category}</option>
+                    ))}
+                  </select>
+                </div>
+              </>
+            )}
+
+            {/* Questions List */}
+            <div className="border border-gray-200 dark:border-gray-600 rounded-lg max-h-64 overflow-y-auto">
+              {isGenerationMode ? (
+                // Show generated questions
+                selectedQuestions.length === 0 ? (
+                  <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                    No questions generated yet.
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                    {selectedQuestions.map((questionId) => {
+                      const question = questions.find(q => q.id === questionId);
+                      if (!question) return null;
+                      return (
+                        <div key={question.id} className="p-4 bg-green-50 dark:bg-green-900/20">
+                          <div className="flex items-start space-x-3">
+                            <div className="w-4 h-4 mt-1 bg-green-500 rounded-full flex-shrink-0"></div>
+                            <div className="flex-1">
+                              <p className="text-sm text-gray-900 dark:text-white font-medium">
+                                {question.text}
+                              </p>
+                              <div className="flex items-center space-x-2 mt-1">
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                  question.category === 'Programming' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                                  question.category === 'DBMS' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                                  question.category === 'Networks' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
+                                  question.category === 'AI' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' :
+                                  'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                                }`}>
+                                  {question.category}
+                                </span>
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                  question.difficulty === 'Easy' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                                  question.difficulty === 'Medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                                  'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                                }`}>
+                                  {question.difficulty}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )
+              ) : (
+                // Show manual selection
+                filteredQuestions.length === 0 ? (
+                  <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                    No questions found matching your criteria.
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                    {filteredQuestions.map((question) => (
+                      <div key={question.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <div className="flex items-start space-x-3">
+                          <input
+                            type="checkbox"
+                            checked={selectedQuestions.includes(question.id)}
+                            onChange={() => handleQuestionSelect(question.id)}
+                            disabled={!selectedQuestions.includes(question.id) && selectedQuestions.length >= formData.totalQuestions}
+                            className="w-4 h-4 mt-1 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                          <div className="flex-1">
+                            <p className="text-sm text-gray-900 dark:text-white font-medium">
+                              {question.text}
+                            </p>
+                            <div className="flex items-center space-x-2 mt-1">
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                question.category === 'Programming' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                                question.category === 'DBMS' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                                question.category === 'Networks' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
+                                question.category === 'AI' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' :
+                                'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                              }`}>
+                                {question.category}
+                              </span>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                question.difficulty === 'Easy' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                                question.difficulty === 'Medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                                'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                              }`}>
+                                {question.difficulty}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )
               )}
             </div>
             

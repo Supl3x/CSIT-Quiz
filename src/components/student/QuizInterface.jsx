@@ -19,13 +19,22 @@ export default function QuizInterface({ quizId, onComplete, onCancel }) {
 
   useEffect(() => {
     if (quiz) {
-      // Shuffle questions for randomization
-      const shuffledQuestions = [...questions]
-        .filter(q => q.category === quiz.category || quiz.category === 'Mixed')
-        .sort(() => Math.random() - 0.5)
-        .slice(0, quiz.totalQuestions);
+      let quizQuestionsToUse = [];
       
-      setQuizQuestions(shuffledQuestions);
+      if (quiz.questions && quiz.questions.length > 0) {
+        // Use predefined questions from quiz (for manually selected or generated quizzes)
+        quizQuestionsToUse = quiz.questions.map(questionId => 
+          questions.find(q => q.id === questionId)
+        ).filter(q => q); // Filter out any undefined questions
+      } else {
+        // Fallback to category-based selection for older quizzes
+        quizQuestionsToUse = [...questions]
+          .filter(q => q.category === quiz.category || quiz.category === 'Mixed')
+          .sort(() => Math.random() - 0.5)
+          .slice(0, quiz.totalQuestions);
+      }
+      
+      setQuizQuestions(quizQuestionsToUse);
       setTimeLeft(quiz.duration * 60); // Convert minutes to seconds
     }
   }, [quiz, questions]);
