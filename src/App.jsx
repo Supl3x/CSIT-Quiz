@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext.jsx';
 import { QuizProvider } from './contexts/QuizContext.jsx';
+import { ThemeProvider } from './contexts/ThemeContext.jsx';
 import LoginPage from './components/auth/LoginPage.jsx';
 import AdminDashboard from './components/admin/AdminDashboard.jsx';
 import StudentDashboard from './components/student/StudentDashboard.jsx';
@@ -30,11 +31,13 @@ function AppContent() {
 
 function App() {
   return (
-    <AuthProvider>
-      <QuizProvider>
-        <AppContent />
-      </QuizProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <QuizProvider>
+          <AppContent />
+        </QuizProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

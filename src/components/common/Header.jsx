@@ -1,16 +1,12 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext.jsx';
+import { useTheme } from '../../contexts/ThemeContext.jsx';
 import { GraduationCap, LogOut, Menu, X, Moon, Sun } from 'lucide-react';
 
 export default function Header() {
   const { user, logout } = useAuth();
+  const { isDarkMode, toggleDarkMode } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
-
-  const toggleDarkMode = () => {
-    setIsDarkMode(!isDarkMode);
-    document.documentElement.classList.toggle('dark');
-  };
 
   return (
     <header className="bg-white dark:bg-gray-800 shadow-lg border-b border-gray-200 dark:border-gray-700">
@@ -77,10 +73,10 @@ export default function Header() {
               <div className="flex items-center justify-between">
                 <button
                   onClick={toggleDarkMode}
-                  className="flex items-center space-x-2 text-gray-600 dark:text-gray-300"
+                  className="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
                 >
                   {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-                  <span>Dark Mode</span>
+                  <span>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
                 </button>
                 
                 <button
