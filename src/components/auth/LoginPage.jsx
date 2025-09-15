@@ -46,8 +46,8 @@ export default function LoginPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl mb-4 shadow-lg">
             <GraduationCap className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">CSIT Quiz Portal</h1>
-          <p className="text-gray-600 dark:text-gray-300">Department of Computer Science & IT</p>
+          <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-2 tracking-tight">CSIT Quiz Portal</h1>
+          <p className="text-gray-600 dark:text-gray-300 font-medium">Department of Computer Science & IT</p>
         </div>
 
         {/* Login Form */}
@@ -104,16 +104,16 @@ export default function LoginPage() {
           </form>
 
           {/* Demo Credentials */}
-          <div className="mt-8 pt-6 border-t border-gray-200">
-            <p className="text-sm text-gray-500 text-center mb-3">Demo Credentials:</p>
+          <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-600">
+            <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 text-center mb-3">Demo Credentials:</p>
             <div className="space-y-2 text-xs">
-              <div className="bg-gray-50 p-3 rounded-lg">
-                <p className="font-medium text-gray-700">Admin Access:</p>
-                <p className="text-gray-600">admin@csit.edu</p>
+              <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                <p className="font-semibold text-gray-700 dark:text-gray-300">Admin Access:</p>
+                <p className="text-gray-600 dark:text-gray-400 font-mono">admin@csit.edu</p>
               </div>
-              <div className="bg-gray-50 p-3 rounded-lg">
-                <p className="font-medium text-gray-700">Student Access:</p>
-                <p className="text-gray-600">student@csit.edu</p>
+              <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                <p className="font-semibold text-gray-700 dark:text-gray-300">Student Access:</p>
+                <p className="text-gray-600 dark:text-gray-400 font-mono">student@csit.edu</p>
               </div>
             </div>
           </div>
