@@ -41,10 +41,9 @@ export default function QuestionForm({ question, onClose }) {
     }
 
     const newQuestion = { ...formData, id: question?.id || Date.now() };
-    onSave(newQuestion); // <--- IMPORTANT
-    onClose();
-  };
-}
+  onSave(newQuestion); // <--- IMPORTANT
+  onClose();
+};
 
   const updateOption = (i, value) => {
     const updated = [...formData.options];
