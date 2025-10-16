@@ -39,26 +39,34 @@ export default function QuizForm({ quiz, onClose }) {
     return matchesSearch && matchesCategory;
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (formData.title.trim() === '' || formData.category === '') {
       alert('Please fill in all required fields');
       return;
     }
 
-    if (formData.totalQuestions > questions.length) {
-      alert(`Not enough questions available. Maximum available: ${questions.length}`);
+    if (selectedQuestions.length === 0) {
+      alert('Please select at least one question for the quiz');
       return;
     }
 
-    if (quiz) {
-      updateQuiz(quiz.id, formData);
-    } else {
-      addQuiz(formData);
+    if (selectedQuestions.length !== formData.totalQuestions) {
+      alert(`Please select exactly ${formData.totalQuestions} questions`);
+      return;
     }
-    
-    onClose();
+
+    try {
+      if (quiz) {
+        await updateQuiz(quiz.id, formData);
+      } else {
+        await addQuiz({ ...formData, selectedQuestions });
+      }
+      onClose();
+    } catch (error) {
+      alert('Error saving quiz: ' + error.message);
+    }
   };
 
   const handleQuestionSelect = (questionId) => {
@@ -146,13 +154,19 @@ export default function QuizForm({ quiz, onClose }) {
               <input
                 type="number"
                 value={formData.totalQuestions}
-                onChange={(e) => setFormData(prev => ({ ...prev, totalQuestions: parseInt(e.target.value) || 10 }))}
+                onChange={(e) => {
+                  const newTotal = parseInt(e.target.value) || 10;
+                  setFormData(prev => ({ ...prev, totalQuestions: newTotal }));
+                  if (selectedQuestions.length > newTotal) {
+                    setSelectedQuestions(prev => prev.slice(0, newTotal));
+                  }
+                }}
                 min="1"
                 max={questions.length}
                 className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
               />
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Maximum available: {questions.length}
+                Available: {questions.filter(q => categoryFilter === 'All' || q.category === categoryFilter).length}
               </p>
             </div>
           </div>
@@ -227,7 +241,7 @@ export default function QuizForm({ quiz, onClose }) {
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                               question.category === 'Programming' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
                               question.category === 'DBMS' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                              question.category === 'Networks' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
+                              question.category === 'Networks' ? 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200' :
                               question.category === 'AI' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' :
                               'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
                             }`}>

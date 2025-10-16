@@ -13,14 +13,22 @@ export default function QuizManager() {
     setShowForm(true);
   };
 
-  const handleDelete = (quizId) => {
+  const handleDelete = async (quizId) => {
     if (confirm('Are you sure you want to delete this quiz?')) {
-      deleteQuiz(quizId);
+      try {
+        await deleteQuiz(quizId);
+      } catch (error) {
+        alert('Error deleting quiz: ' + error.message);
+      }
     }
   };
 
-  const toggleQuizStatus = (quiz) => {
-    updateQuiz(quiz.id, { isActive: !quiz.isActive });
+  const toggleQuizStatus = async (quiz) => {
+    try {
+      await updateQuiz(quiz.id, { isActive: !quiz.is_active });
+    } catch (error) {
+      alert('Error updating quiz status: ' + error.message);
+    }
   };
 
   const handleCloseForm = () => {
@@ -62,7 +70,7 @@ export default function QuizManager() {
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                       quiz.category === 'Programming' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
                       quiz.category === 'DBMS' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                      quiz.category === 'Networks' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
+                      quiz.category === 'Networks' ? 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200' :
                       quiz.category === 'AI' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' :
                       'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
                     }`}>
@@ -92,7 +100,7 @@ export default function QuizManager() {
                 <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-300">
                   <div className="flex items-center space-x-2">
                     <FileText className="w-4 h-4" />
-                    <span>{quiz.totalQuestions} questions</span>
+                    <span>{quiz.total_questions} questions</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Clock className="w-4 h-4" />
@@ -118,39 +126,30 @@ export default function QuizManager() {
                 <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
                   <div className="flex items-center space-x-2">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      quiz.isActive 
+                      quiz.is_active
                         ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
                         : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
                     }`}>
-                      {quiz.isActive ? 'Active' : 'Inactive'}
+                      {quiz.is_active ? 'Active' : 'Inactive'}
                     </span>
                   </div>
-                  
+
                   <button
                     onClick={() => toggleQuizStatus(quiz)}
                     className={`flex items-center space-x-1 px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                      quiz.isActive
+                      quiz.is_active
                         ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20'
                         : 'text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20'
                     }`}
                   >
-                    {quiz.isActive ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                    <span>{quiz.isActive ? 'Deactivate' : 'Activate'}</span>
+                    {quiz.is_active ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                    <span>{quiz.is_active ? 'Deactivate' : 'Activate'}</span>
                   </button>
                 </div>
 
                 {/* Creation Info */}
                 <div className="text-xs text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-200 dark:border-gray-700">
-                  Created on {(() => {
-                    if (quiz.createdAt instanceof Date) {
-                      return quiz.createdAt.toLocaleDateString();
-                    } else if (typeof quiz.createdAt === 'string') {
-                      const d = new Date(quiz.createdAt);
-                      return isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString();
-                    } else {
-                      return 'N/A';
-                    }
-                  })()}
+                  Created on {new Date(quiz.created_at).toLocaleDateString()}
                 </div>
               </div>
             </div>

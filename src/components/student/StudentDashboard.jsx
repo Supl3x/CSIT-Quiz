@@ -22,7 +22,7 @@ export default function StudentDashboard() {
   const [selectedQuiz, setSelectedQuiz] = useState(null);
 
   const studentAttempts = getStudentAttempts(user?.id || '');
-  const activeQuizzes = quizzes.filter(quiz => quiz.isActive);
+  const activeQuizzes = quizzes.filter(quiz => quiz.is_active);
   
   // Calculate student statistics
   const totalAttempts = studentAttempts.length;
@@ -32,11 +32,10 @@ export default function StudentDashboard() {
   const bestScore = totalAttempts > 0 
     ? Math.max(...studentAttempts.map(attempt => attempt.score))
     : 0;
-  const completedQuizzes = new Set(studentAttempts.map(attempt => attempt.quizId)).size;
+  const completedQuizzes = new Set(studentAttempts.map(attempt => attempt.quiz_id)).size;
 
-  // Recent attempts
   const recentAttempts = studentAttempts
-    .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
+    .sort((a, b) => new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime())
     .slice(0, 5);
 
   const tabs = [
@@ -58,7 +57,7 @@ export default function StudentDashboard() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-8 text-white">
+      <div className="bg-gradient-to-r from-blue-600 to-cyan-600 rounded-2xl p-8 text-white">
         <div className="flex flex-col md:flex-row md:items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold mb-2">
@@ -136,7 +135,7 @@ export default function StudentDashboard() {
                   <p className="text-gray-600 dark:text-gray-400 text-sm">Average Score</p>
                   <p className="text-3xl font-bold text-gray-900 dark:text-white">{averageScore}%</p>
                 </div>
-                <Target className="w-8 h-8 text-purple-500" />
+                <Target className="w-8 h-8 text-cyan-500" />
               </div>
             </div>
 
@@ -176,11 +175,11 @@ export default function StudentDashboard() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {activeQuizzes.slice(0, 6).map((quiz) => {
-                  const hasAttempted = studentAttempts.some(attempt => attempt.quizId === quiz.id);
+                  const hasAttempted = studentAttempts.some(attempt => attempt.quiz_id === quiz.id);
                   const bestAttemptScore = hasAttempted
                     ? Math.max(...studentAttempts
-                        .filter(attempt => attempt.quizId === quiz.id)
-                        .map(attempt => attempt.score))
+                        .filter(attempt => attempt.quiz_id === quiz.id)
+                        .map(attempt => parseFloat(attempt.score)))
                     : null;
 
                   return (
@@ -190,7 +189,7 @@ export default function StudentDashboard() {
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                           quiz.category === 'Programming' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
                           quiz.category === 'DBMS' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                          quiz.category === 'Networks' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
+                          quiz.category === 'Networks' ? 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200' :
                           quiz.category === 'AI' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' :
                           'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
                         }`}>
@@ -239,7 +238,7 @@ export default function StudentDashboard() {
 
               <div className="space-y-4">
                 {recentAttempts.map((attempt) => {
-                  const quiz = quizzes.find(q => q.id === attempt.quizId);
+                  const quiz = quizzes.find(q => q.id === attempt.quiz_id);
                   return (
                     <div key={attempt.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                       <div>
@@ -247,21 +246,21 @@ export default function StudentDashboard() {
                           {quiz?.title || 'Unknown Quiz'}
                         </h4>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                          Completed on {new Date(attempt.completedAt).toLocaleDateString()} • 
-                          {Math.floor(attempt.timeSpent / 60)}:{(attempt.timeSpent % 60).toString().padStart(2, '0')} minutes
+                          Completed on {new Date(attempt.completed_at).toLocaleDateString()} •
+                          {Math.floor(attempt.time_spent / 60)}:{(attempt.time_spent % 60).toString().padStart(2, '0')} minutes
                         </p>
                       </div>
                       <div className="text-right">
                         <p className={`text-lg font-bold ${
-                          attempt.score >= 80 ? 'text-green-600 dark:text-green-400' :
-                          attempt.score >= 60 ? 'text-yellow-600 dark:text-yellow-400' :
+                          parseFloat(attempt.score) >= 80 ? 'text-green-600 dark:text-green-400' :
+                          parseFloat(attempt.score) >= 60 ? 'text-yellow-600 dark:text-yellow-400' :
                           'text-red-600 dark:text-red-400'
                         }`}>
-                          {attempt.score}%
+                          {Math.round(parseFloat(attempt.score))}%
                         </p>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {attempt.score >= 80 ? 'Excellent' :
-                           attempt.score >= 60 ? 'Good' : 'Needs Improvement'}
+                          {parseFloat(attempt.score) >= 80 ? 'Excellent' :
+                           parseFloat(attempt.score) >= 60 ? 'Good' : 'Needs Improvement'}
                         </p>
                       </div>
                     </div>
@@ -290,12 +289,12 @@ export default function StudentDashboard() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {activeQuizzes.map((quiz) => {
-                const hasAttempted = studentAttempts.some(attempt => attempt.quizId === quiz.id);
-                const attemptCount = studentAttempts.filter(attempt => attempt.quizId === quiz.id).length;
+                const hasAttempted = studentAttempts.some(attempt => attempt.quiz_id === quiz.id);
+                const attemptCount = studentAttempts.filter(attempt => attempt.quiz_id === quiz.id).length;
                 const bestScore = hasAttempted
                   ? Math.max(...studentAttempts
-                      .filter(attempt => attempt.quizId === quiz.id)
-                      .map(attempt => attempt.score))
+                      .filter(attempt => attempt.quiz_id === quiz.id)
+                      .map(attempt => parseFloat(attempt.score)))
                   : null;
 
                 return (
@@ -305,7 +304,7 @@ export default function StudentDashboard() {
                       <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                         quiz.category === 'Programming' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
                         quiz.category === 'DBMS' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                        quiz.category === 'Networks' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
+                        quiz.category === 'Networks' ? 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200' :
                         quiz.category === 'AI' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' :
                         'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
                       }`}>

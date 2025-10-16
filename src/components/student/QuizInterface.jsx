@@ -6,7 +6,7 @@ import { Clock, ChevronLeft, ChevronRight, Flag, CheckCircle, XCircle, Zap, Star
 
 export default function QuizInterface({ quizId, onComplete, onCancel }) {
   const { user } = useAuth();
-  const { quizzes, questions, submitQuizAttempt } = useQuiz();
+  const { quizzes, getQuizQuestions, submitQuizAttempt } = useQuiz();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState({});
   const [timeLeft, setTimeLeft] = useState(0);
@@ -14,22 +14,29 @@ export default function QuizInterface({ quizId, onComplete, onCancel }) {
   const [quizQuestions, setQuizQuestions] = useState([]);
   const [showResults, setShowResults] = useState(false);
   const [results, setResults] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const quiz = quizzes.find(q => q.id === quizId);
   const startTime = React.useRef(Date.now());
 
   useEffect(() => {
     if (quiz) {
-      // Shuffle questions for randomization
-      const shuffledQuestions = [...questions]
-        .filter(q => q.category === quiz.category || quiz.category === 'Mixed')
-        .sort(() => Math.random() - 0.5)
-        .slice(0, quiz.totalQuestions);
-      
-      setQuizQuestions(shuffledQuestions);
-      setTimeLeft(quiz.duration * 60); // Convert minutes to seconds
+      loadQuizQuestions();
     }
-  }, [quiz, questions]);
+  }, [quiz]);
+
+  const loadQuizQuestions = async () => {
+    setLoading(true);
+    try {
+      const questions = await getQuizQuestions(quizId);
+      setQuizQuestions(questions);
+      setTimeLeft(quiz.duration * 60);
+    } catch (error) {
+      console.error('Error loading quiz questions:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (timeLeft > 0) {
@@ -73,6 +80,7 @@ export default function QuizInterface({ quizId, onComplete, onCancel }) {
     const attempt = {
       quizId,
       studentId: user?.id || '',
+      studentName: user?.name || 'Student',
       answers,
       score,
       totalQuestions: quizQuestions.length,
@@ -80,7 +88,7 @@ export default function QuizInterface({ quizId, onComplete, onCancel }) {
       categoryScores
     };
 
-    submitQuizAttempt(attempt);
+    await submitQuizAttempt(attempt);
     
     // Show results
     const resultsData = {
@@ -111,7 +119,7 @@ export default function QuizInterface({ quizId, onComplete, onCancel }) {
     return ((currentQuestionIndex + 1) / quizQuestions.length) * 100;
   };
 
-  if (!quiz || quizQuestions.length === 0) {
+  if (!quiz || loading || quizQuestions.length === 0) {
     return (
       <motion.div
         initial={{ opacity: 0 }}
@@ -357,7 +365,7 @@ export default function QuizInterface({ quizId, onComplete, onCancel }) {
                 setShowResults(false);
                 setCurrentQuestionIndex(0);
                 setAnswers({});
-                setTimeLeft(quiz.duration * 60);
+                loadQuizQuestions();
                 startTime.current = Date.now();
               }}
               className="flex-1 bg-gradient-to-r from-slate-600 to-slate-700 text-white py-4 px-6 rounded-xl font-semibold shadow-lg hover:shadow-slate-500/50 transition-all"
@@ -381,7 +389,7 @@ export default function QuizInterface({ quizId, onComplete, onCancel }) {
       <motion.div
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="relative bg-gradient-to-br from-cyan-600 via-blue-700 to-indigo-800 p-8 text-white overflow-hidden"
+        className="relative bg-gradient-to-br from-cyan-600 via-blue-700 to-blue-800 p-8 text-white overflow-hidden"
       >
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-shimmer" />
         <div className="relative flex items-center justify-between mb-6">
@@ -429,7 +437,7 @@ export default function QuizInterface({ quizId, onComplete, onCancel }) {
               initial={{ width: 0 }}
               animate={{ width: `${getProgressPercentage()}%` }}
               transition={{ duration: 0.5, ease: "easeOut" }}
-              className="bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-600 h-4 rounded-full relative overflow-hidden"
+              className="bg-gradient-to-r from-cyan-400 via-blue-500 to-blue-600 h-4 rounded-full relative overflow-hidden"
             >
               <motion.div
                 animate={{ x: ['0%', '100%'] }}
@@ -466,7 +474,7 @@ export default function QuizInterface({ quizId, onComplete, onCancel }) {
               <span className={`px-3 py-1.5 rounded-xl text-xs font-semibold backdrop-blur-xl border ${
                 currentQuestion.category === 'Programming' ? 'bg-blue-500/20 text-blue-300 border-blue-500/30' :
                 currentQuestion.category === 'DBMS' ? 'bg-green-500/20 text-green-300 border-green-500/30' :
-                currentQuestion.category === 'Networks' ? 'bg-purple-500/20 text-purple-300 border-purple-500/30' :
+                currentQuestion.category === 'Networks' ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30' :
                 currentQuestion.category === 'AI' ? 'bg-orange-500/20 text-orange-300 border-orange-500/30' :
                 'bg-red-500/20 text-red-300 border-red-500/30'
               }`}>

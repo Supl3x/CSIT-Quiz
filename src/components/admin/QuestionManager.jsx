@@ -27,9 +27,13 @@ export default function QuestionManager() {
     setShowForm(true);
   };
 
-  const handleDelete = (questionId) => {
+  const handleDelete = async (questionId) => {
     if (confirm('Are you sure you want to delete this question?')) {
-      deleteQuestion(questionId);
+      try {
+        await deleteQuestion(questionId);
+      } catch (error) {
+        alert('Error deleting question: ' + error.message);
+      }
     }
   };
 
@@ -117,7 +121,7 @@ export default function QuestionManager() {
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                         question.category === 'Programming' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
                         question.category === 'DBMS' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                        question.category === 'Networks' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
+                        question.category === 'Networks' ? 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200' :
                         question.category === 'AI' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' :
                         'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
                       }`}>
