@@ -3,13 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { AuthProvider, useAuth } from './contexts/AuthContext.jsx';
 import { QuizProvider } from './contexts/QuizContext.jsx';
 import { ThemeProvider } from './contexts/ThemeContext.jsx';
-import LoginPage from './components/auth/LoginPage.jsx';
-import AdminDashboard from './components/admin/AdminDashboard.jsx';
+import EnhancedLoginPage from './components/auth/EnhancedLoginPage.jsx';
+import EnhancedAdminDashboard from './components/admin/EnhancedAdminDashboard.jsx';
 import StudentDashboard from './components/student/StudentDashboard.jsx';
 import Header from './components/common/Header.jsx';
 import Footer from './components/common/Footer.jsx';
 import LoadingSpinner from './components/common/LoadingSpinner.jsx';
-import AnimatedBackground from './components/common/AnimatedBackground.jsx';
+import EnhancedBackground from './components/common/EnhancedBackground.jsx';
 
 function AppContent() {
   const { user, loading } = useAuth();
@@ -19,11 +19,11 @@ function AppContent() {
   }
 
   if (!user) {
-    return <LoginPage />;
+    return <EnhancedLoginPage />;
   }
 
   return (
-    <AnimatedBackground variant="dark">
+    <EnhancedBackground variant="dark">
       <div className="min-h-screen flex flex-col">
         <Header />
         <motion.main 
@@ -41,7 +41,7 @@ function AppContent() {
                 exit={{ opacity: 0, x: 20 }}
                 transition={{ duration: 0.4 }}
               >
-                <AdminDashboard />
+                <EnhancedAdminDashboard />
               </motion.div>
             ) : (
               <motion.div
@@ -58,7 +58,7 @@ function AppContent() {
         </motion.main>
         <Footer />
       </div>
-    </AnimatedBackground>
+    </EnhancedBackground>
   );
 }
 

@@ -4,7 +4,7 @@ import { Plus, Edit, Trash2, Search, Filter } from 'lucide-react';
 import QuestionForm from './QuestionForm.jsx';
 
 export default function QuestionManager() {
-  const { questions, deleteQuestion } = useQuiz();
+  const { questions, addQuestion, updateQuestion, deleteQuestion } = useQuiz();
   const [showForm, setShowForm] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -33,9 +33,93 @@ export default function QuestionManager() {
     }
   };
 
+  const handleSaveQuestion = (formData) => {
+    if (editingQuestion) {
+      updateQuestion({ ...formData, id: editingQuestion.id });
+    } else {
+      addQuestion({ ...formData, id: Date.now().toString() });
+    }
+    handleCloseForm();
+  };
+
+
   const handleCloseForm = () => {
     setShowForm(false);
     setEditingQuestion(null);
+  };
+
+  // Fix the true/false answer display in the question list
+  const renderQuestionAnswer = (question) => {
+    switch (question.type) {
+      case 'multiple-choice':
+        return question.options && question.options.map((option, index) => (
+          <div key={index} className={`flex items-center space-x-2 ${
+            index === question.correctAnswer ? 'text-green-600 dark:text-green-400 font-medium' : ''
+          }`}>
+            <span className="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-xs">
+              {String.fromCharCode(65 + index)}
+            </span>
+            <span>{option}</span>
+            {index === question.correctAnswer && (
+              <span className="text-green-500">✓</span>
+            )}
+          </div>
+        ));
+      
+      case 'true-false':
+        return (
+          <div className={`font-medium ${
+            question.correctAnswer ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+          }`}>
+            Correct answer: {question.correctAnswer ? 'True' : 'False'}
+          </div>
+        );
+      
+      case 'matching':
+        return question.matchingData?.pairs && (
+          <div className="space-y-1">
+            {question.matchingData.pairs.slice(0, 3).map((pair, index) => (
+              <div key={index} className="flex items-center space-x-2">
+                <span className="text-blue-600 dark:text-blue-400">{pair.left}</span>
+                <span>→</span>
+                <span className="text-green-600 dark:text-green-400">{pair.right}</span>
+              </div>
+            ))}
+            {question.matchingData.pairs.length > 3 && (
+              <span className="text-gray-500">+{question.matchingData.pairs.length - 3} more pairs</span>
+            )}
+          </div>
+        );
+      
+      case 'sequence':
+        return question.sequenceData?.items && (
+          <div className="space-y-1">
+            {question.sequenceData.items.slice(0, 3).map((item, index) => (
+              <div key={index} className="flex items-center space-x-2">
+                <span className="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-xs">
+                  {index + 1}
+                </span>
+                <span>{item}</span>
+              </div>
+            ))}
+            {question.sequenceData.items.length > 3 && (
+              <span className="text-gray-500">+{question.sequenceData.items.length - 3} more steps</span>
+            )}
+          </div>
+        );
+      
+      case 'drag-drop':
+        return question.dragDropData?.items && (
+          <div>
+            <span className="text-gray-500">
+              {question.dragDropData.items.length} items
+            </span>
+          </div>
+        );
+      
+      default:
+        return null;
+    }
   };
 
   return (
@@ -135,22 +219,14 @@ export default function QuestionManager() {
                       <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-full text-xs font-medium">
                         {question.points} points
                       </span>
+
+                      <span className="px-2 py-1 bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 rounded-full text-xs font-medium">
+                        {question.type}
+                      </span>
                     </div>
 
                     <div className="space-y-1 text-sm text-gray-600 dark:text-gray-300">
-                      {question.options && question.options.map((option, index) => (
-                        <div key={index} className={`flex items-center space-x-2 ${
-                          index === question.correctAnswer ? 'text-green-600 dark:text-green-400 font-medium' : ''
-                        }`}>
-                          <span className="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-xs">
-                            {String.fromCharCode(65 + index)}
-                          </span>
-                          <span>{option}</span>
-                          {index === question.correctAnswer && (
-                            <span className="text-green-500">✓</span>
-                          )}
-                        </div>
-                      ))}
+                      {renderQuestionAnswer(question)}
                     </div>
                   </div>
 
@@ -180,6 +256,7 @@ export default function QuestionManager() {
         <QuestionForm
           question={editingQuestion}
           onClose={handleCloseForm}
+          onSubmit={handleSaveQuestion}
         />
       )}
     </div>

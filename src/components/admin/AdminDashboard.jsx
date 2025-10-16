@@ -13,7 +13,7 @@ import {
   FileText,
   Clock
 } from 'lucide-react';
-import QuestionManager from './QuestionManager.jsx';
+import DraggableQuestionManager from './DraggableQuestionManager.jsx';
 import QuizManager from './QuizManager.jsx';
 import AnalyticsDashboard from './AnalyticsDashboard.jsx';
 
@@ -178,7 +178,7 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {activeTab === 'questions' && <QuestionManager />}
+      {activeTab === 'questions' && <DraggableQuestionManager />}
       {activeTab === 'quizzes' && <QuizManager />}
       {activeTab === 'analytics' && <AnalyticsDashboard />}
     </div>

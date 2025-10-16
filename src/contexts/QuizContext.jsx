@@ -2,233 +2,166 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const QuizContext = createContext(undefined);
 
-// ---------------- MOCK DATA ----------------
+// COMPLETELY NEW DATA STRUCTURE - NO CATEGORY FILTERING
 const initialQuestions = [
-  // ---------- MCQ QUESTIONS ----------
+  // ========== PROGRAMMING QUIZ QUESTIONS ==========
   {
-    id: 'mcq-1',
-    type: 'mcq',
+    id: 'prog-quiz-1',
+    type: 'multiple-choice',
     text: 'Which of the following is NOT a programming paradigm?',
     options: ['Object-Oriented', 'Functional', 'Procedural', 'Sequential'],
     correctAnswer: 3,
     category: 'Programming',
     difficulty: 'Medium',
     points: 10,
+    explanation: 'Sequential is not a programming paradigm.'
   },
   {
-    id: 'mcq-2',
-    type: 'mcq',
+    id: 'prog-quiz-2', 
+    type: 'true-false',
+    text: 'JavaScript is a statically typed language.',
+    correctAnswer: false,
+    category: 'Programming',
+    difficulty: 'Easy',
+    points: 5,
+    explanation: 'JavaScript is dynamically typed, not statically typed.'
+  },
+  {
+    id: 'prog-quiz-3',
+    type: 'drag-drop',
+    text: 'Match the programming language with its paradigm.',
+    dragDropData: {
+      items: ['Python', 'Haskell', 'Java', 'C++'],
+      targets: ['Multi-paradigm', 'Functional', 'Object-Oriented', 'Procedural'],
+      correctOrder: [0, 1, 2, 3],
+      instruction: 'Drag each language to its correct paradigm'
+    },
+    category: 'Programming',
+    difficulty: 'Medium',
+    points: 12,
+    explanation: 'Python is multi-paradigm, Haskell is functional, Java is object-oriented, C++ supports procedural programming.'
+  },
+
+  // ========== DBMS QUIZ QUESTIONS ==========
+  {
+    id: 'dbms-quiz-1',
+    type: 'multiple-choice',
     text: 'What does SQL stand for?',
     options: [
       'Structured Query Language',
       'Simple Query Language',
-      'Standard Query Language',
-      'System Query Language',
+      'Standard Query Language', 
+      'System Query Language'
     ],
     correctAnswer: 0,
     category: 'DBMS',
     difficulty: 'Easy',
     points: 5,
+    explanation: 'SQL stands for Structured Query Language.'
   },
   {
-    id: 'mcq-3',
-    type: 'mcq',
+    id: 'dbms-quiz-2',
+    type: 'true-false',
+    text: 'A primary key can contain NULL values.',
+    correctAnswer: false,
+    category: 'DBMS', 
+    difficulty: 'Medium',
+    points: 8,
+    explanation: 'Primary keys cannot contain NULL values as they must uniquely identify each record.'
+  },
+  {
+    id: 'dbms-quiz-3',
+    type: 'drag-drop',
+    text: 'Match the database terms with their definitions.',
+    dragDropData: {
+      items: ['Primary Key', 'Foreign Key', 'Index', 'Transaction'],
+      targets: ['Uniquely identifies records', 'References another table', 'Improves query performance', 'Atomic operation unit'],
+      correctOrder: [0, 1, 2, 3],
+      instruction: 'Drag each term to its correct definition'
+    },
+    category: 'DBMS',
+    difficulty: 'Medium',
+    points: 12,
+    explanation: 'Primary keys uniquely identify records, foreign keys reference other tables, indexes improve performance, and transactions are atomic units.'
+  },
+
+  // ========== NETWORKS QUIZ QUESTIONS ==========
+  {
+    id: 'net-quiz-1',
+    type: 'multiple-choice',
     text: 'Which layer of the OSI model handles routing?',
     options: ['Physical', 'Data Link', 'Network', 'Transport'],
     correctAnswer: 2,
     category: 'Networks',
     difficulty: 'Medium',
     points: 10,
+    explanation: 'The Network layer handles routing and addressing.'
   },
   {
-    id: 'mcq-4',
-    type: 'mcq',
-    text: 'What is the primary goal of machine learning?',
-    options: [
-      'Data storage',
-      'Pattern recognition',
-      'Network communication',
-      'User interface design',
-    ],
-    correctAnswer: 1,
-    category: 'AI',
-    difficulty: 'Easy',
-    points: 5,
-  },
-  {
-    id: 'mcq-5',
-    type: 'mcq',
-    text: 'Which encryption algorithm is considered quantum-resistant?',
-    options: ['RSA', 'AES', 'Lattice-based cryptography', 'DES'],
-    correctAnswer: 2,
-    category: 'Cybersecurity',
-    difficulty: 'Hard',
-    points: 15,
-  },
-
-  // ---------- DRAG & DROP QUESTIONS ----------
-  {
-    id: 'dd-1',
-    type: 'dragdrop',
-    text: 'Match the programming language with its paradigm.',
-    pairs: [
-      { left: 'Python', right: 'Multi-paradigm' },
-      { left: 'Haskell', right: 'Functional' },
-      { left: 'Java', right: 'Object-Oriented' },
-    ],
-    category: 'Programming',
+    id: 'net-quiz-2',
+    type: 'true-false', 
+    text: 'TCP is a connectionless protocol.',
+    correctAnswer: false,
+    category: 'Networks',
     difficulty: 'Medium',
-    points: 10,
+    points: 8,
+    explanation: 'TCP is connection-oriented, while UDP is connectionless.'
   },
   {
-    id: 'dd-2',
-    type: 'dragdrop',
-    text: 'Match the database to its type.',
-    pairs: [
-      { left: 'MySQL', right: 'Relational' },
-      { left: 'MongoDB', right: 'NoSQL' },
-      { left: 'Neo4j', right: 'Graph DB' },
-    ],
-    category: 'DBMS',
-    difficulty: 'Medium',
-    points: 10,
-  },
-  {
-    id: 'dd-3',
-    type: 'dragdrop',
-    text: 'Match the protocol to its layer.',
-    pairs: [
-      { left: 'IP', right: 'Network' },
-      { left: 'TCP', right: 'Transport' },
-      { left: 'Ethernet', right: 'Data Link' },
-    ],
+    id: 'net-quiz-3',
+    type: 'drag-drop',
+    text: 'Match the network devices with their functions.',
+    dragDropData: {
+      items: ['Router', 'Switch', 'Hub', 'Firewall'],
+      targets: ['Connects different networks', 'Connects devices in LAN', 'Broadcasts to all ports', 'Filters network traffic'],
+      correctOrder: [0, 1, 2, 3],
+      instruction: 'Drag each device to its correct function'
+    },
     category: 'Networks',
     difficulty: 'Hard',
     points: 15,
-  },
-  {
-    id: 'dd-4',
-    type: 'dragdrop',
-    text: 'Match AI terms with their descriptions.',
-    pairs: [
-      { left: 'Supervised Learning', right: 'Labeled data' },
-      { left: 'Unsupervised Learning', right: 'Clustering' },
-      { left: 'Reinforcement Learning', right: 'Rewards & penalties' },
-    ],
-    category: 'AI',
-    difficulty: 'Medium',
-    points: 10,
-  },
-  {
-    id: 'dd-5',
-    type: 'dragdrop',
-    text: 'Match the security concept to its meaning.',
-    pairs: [
-      { left: 'Confidentiality', right: 'Prevent unauthorized access' },
-      { left: 'Integrity', right: 'Data accuracy' },
-      { left: 'Availability', right: 'System uptime' },
-    ],
-    category: 'Cybersecurity',
-    difficulty: 'Easy',
-    points: 5,
-  },
-
-  // ...existing code...
-  // ---------- CODE ARRANGEMENT QUESTIONS ----------
-  {
-    id: 'code-1',
-    type: 'codearrangement',
-    text: 'Arrange the following Python code in the correct order for calculating factorial:',
-    codeSnippets: [
-      { id: 's1', code: 'def factorial(n):' },
-      { id: 's2', code: '    if n == 0 or n == 1:' },
-      { id: 's3', code: '        return 1' },
-      { id: 's4', code: '    else:' },
-      { id: 's5', code: '        return n * factorial(n-1)' },
-      { id: 's6', code: 'result = factorial(5)' },
-      { id: 's7', code: 'print(result)' }
-    ],
-    correctOrder: [
-      { id: 's1', code: 'def factorial(n):' },
-      { id: 's2', code: '    if n == 0 or n == 1:' },
-      { id: 's3', code: '        return 1' },
-      { id: 's4', code: '    else:' },
-      { id: 's5', code: '        return n * factorial(n-1)' },
-      { id: 's6', code: 'result = factorial(5)' },
-      { id: 's7', code: 'print(result)' }
-    ],
-    category: 'Programming',
-    difficulty: 'Medium',
-    points: 15,
-  },
-  {
-    id: 'code-2',
-    type: 'codearrangement',
-    text: 'Arrange the SQL query execution order:',
-    codeSnippets: [
-      { id: 's1', code: 'SELECT name, age FROM users' },
-      { id: 's2', code: 'WHERE age > 18' },
-      { id: 's3', code: 'ORDER BY name ASC' },
-      { id: 's4', code: 'LIMIT 10' }
-    ],
-    correctOrder: [
-      { id: 's1', code: 'SELECT name, age FROM users' },
-      { id: 's2', code: 'WHERE age > 18' },
-      { id: 's3', code: 'ORDER BY name ASC' },
-      { id: 's4', code: 'LIMIT 10' }
-    ],
-    category: 'DBMS',
-    difficulty: 'Easy',
-    points: 10,
-  },
-  {
-    id: 'code-3',
-    type: 'codearrangement',
-    text: 'Arrange the React component lifecycle methods in order:',
-    codeSnippets: [
-      { id: 's1', code: 'constructor()' },
-      { id: 's2', code: 'render()' },
-      { id: 's3', code: 'componentDidMount()' },
-      { id: 's4', code: 'componentDidUpdate()' },
-      { id: 's5', code: 'componentWillUnmount()' }
-    ],
-    correctOrder: [
-      { id: 's1', code: 'constructor()' },
-      { id: 's2', code: 'render()' },
-      { id: 's3', code: 'componentDidMount()' },
-      { id: 's4', code: 'componentDidUpdate()' },
-      { id: 's5', code: 'componentWillUnmount()' }
-    ],
-    category: 'Web Development',
-    difficulty: 'Hard',
-    points: 20,
-  },
-
+    explanation: 'Routers connect networks, switches connect LAN devices, hubs broadcast, and firewalls filter traffic.'
+  }
 ];
 
-// Example Quizzes
 const initialQuizzes = [
   {
-    id: '1',
+    id: 'quiz-programming',
     title: 'Programming Fundamentals',
     category: 'Programming',
     duration: 30,
-    totalQuestions: 10,
     isActive: true,
     createdBy: '1',
     createdAt: new Date('2024-01-01'),
+    // ONLY Programming quiz questions
+    questions: ['prog-quiz-1', 'prog-quiz-2', 'prog-quiz-3']
   },
   {
-    id: '2',
+    id: 'quiz-dbms',
     title: 'Database Management Systems',
     category: 'DBMS',
-    duration: 45,
-    totalQuestions: 15,
+    duration: 45, 
     isActive: true,
     createdBy: '1',
     createdAt: new Date('2024-01-02'),
+    // ONLY DBMS quiz questions
+    questions: ['dbms-quiz-1', 'dbms-quiz-2', 'dbms-quiz-3']
   },
+  {
+    id: 'quiz-networks',
+    title: 'Computer Networks',
+    category: 'Networks',
+    duration: 35,
+    isActive: true,
+    createdBy: '1',
+    createdAt: new Date('2024-01-03'),
+    // ONLY Networks quiz questions
+    questions: ['net-quiz-1', 'net-quiz-2', 'net-quiz-3']
+  }
+  
 ];
+
+
 
 export function QuizProvider({ children }) {
   const [questions, setQuestions] = useState(initialQuestions);
@@ -237,24 +170,54 @@ export function QuizProvider({ children }) {
 
   // Load from localStorage
   useEffect(() => {
+    console.log('🔄 Loading data from localStorage...');
+    
     const savedQuestions = localStorage.getItem('csit-quiz-questions');
     const savedQuizzes = localStorage.getItem('csit-quiz-quizzes');
     const savedAttempts = localStorage.getItem('csit-quiz-attempts');
 
-    if (savedQuestions) setQuestions(JSON.parse(savedQuestions));
-    if (savedQuizzes) {
-      const quizzes = JSON.parse(savedQuizzes).map((quiz) => ({
-        ...quiz,
-        createdAt: quiz.createdAt ? new Date(quiz.createdAt) : new Date(),
-      }));
-      setQuizzes(quizzes);
+    if (savedQuestions) {
+      try {
+        const parsed = JSON.parse(savedQuestions);
+        console.log('📥 Loaded questions:', parsed);
+        setQuestions(parsed);
+      } catch (e) {
+        console.error('❌ Error parsing saved questions:', e);
+        setQuestions(initialQuestions);
+      }
+    } else {
+      console.log('📝 No saved questions, using initial data');
     }
+    
+    if (savedQuizzes) {
+      try {
+        const parsedQuizzes = JSON.parse(savedQuizzes);
+        console.log('📥 Loaded quizzes:', parsedQuizzes);
+        const quizzesWithDates = parsedQuizzes.map((quiz) => ({
+          ...quiz,
+          createdAt: quiz.createdAt ? new Date(quiz.createdAt) : new Date(),
+        }));
+        setQuizzes(quizzesWithDates);
+      } catch (e) {
+        console.error('❌ Error parsing saved quizzes:', e);
+        setQuizzes(initialQuizzes);
+      }
+    } else {
+      console.log('📝 No saved quizzes, using initial data');
+    }
+    
     if (savedAttempts) {
-      const attempts = JSON.parse(savedAttempts).map((attempt) => ({
-        ...attempt,
-        completedAt: attempt.completedAt ? new Date(attempt.completedAt) : new Date(),
-      }));
-      setAttempts(attempts);
+      try {
+        const parsedAttempts = JSON.parse(savedAttempts);
+        const attemptsWithDates = parsedAttempts.map((attempt) => ({
+          ...attempt,
+          completedAt: attempt.completedAt ? new Date(attempt.completedAt) : new Date(),
+        }));
+        setAttempts(attemptsWithDates);
+      } catch (e) {
+        console.error('Error parsing saved attempts:', e);
+        setAttempts([]);
+      }
     }
   }, []);
 
@@ -271,10 +234,84 @@ export function QuizProvider({ children }) {
     localStorage.setItem('csit-quiz-attempts', JSON.stringify(attempts));
   }, [attempts]);
 
+  // Helper function to get full quiz with question objects
+  const getQuizWithQuestions = (quizId) => {
+    console.log(`🔍 Getting quiz: ${quizId}`);
+    const quiz = quizzes.find(q => q.id === quizId);
+    
+    if (!quiz) {
+      console.log(`❌ Quiz ${quizId} not found`);
+      return null;
+    }
+    
+    if (!quiz.questions || quiz.questions.length === 0) {
+      console.log(`❌ Quiz ${quizId} has no questions`);
+      return null;
+    }
+    
+    const quizQuestions = quiz.questions
+      .map(questionId => {
+        const question = questions.find(q => q.id === questionId);
+        if (!question) {
+          console.log(`❌ Question ${questionId} not found in questions list`);
+        }
+        return question;
+      })
+      .filter(q => q !== undefined);
+
+    console.log(`✅ Quiz ${quizId} loaded ${quizQuestions.length} questions:`, quizQuestions.map(q => q.text));
+    
+    return {
+      ...quiz,
+      questions: quizQuestions
+    };
+  };
+
+  // Get all quizzes with their full questions
+  const getQuizzesWithQuestions = () => {
+    console.log('🔄 Getting all quizzes with questions...');
+    const quizzesWithQuestions = quizzes.map(quiz => getQuizWithQuestions(quiz.id)).filter(quiz => quiz !== null);
+    console.log('✅ All quizzes with questions:', quizzesWithQuestions.map(q => ({
+      title: q.title,
+      questionCount: q.questions.length,
+      questions: q.questions.map(qq => qq.text)
+    })));
+    return quizzesWithQuestions;
+  };
+
+  // Initialize sample data (for testing)
+  const initializeSampleData = () => {
+    console.log('🔄 Initializing sample data...');
+    
+    // Clear everything first
+    localStorage.removeItem('csit-quiz-questions');
+    localStorage.removeItem('csit-quiz-quizzes');
+    localStorage.removeItem('csit-quiz-attempts');
+    
+    setQuestions(initialQuestions);
+    setQuizzes(initialQuizzes);
+    setAttempts([]);
+    
+    // Set fresh data
+    localStorage.setItem('csit-quiz-questions', JSON.stringify(initialQuestions));
+    localStorage.setItem('csit-quiz-quizzes', JSON.stringify(initialQuizzes));
+    localStorage.setItem('csit-quiz-attempts', JSON.stringify([]));
+    
+    console.log('✅ Sample data initialized!');
+    console.log('📊 Quizzes:', initialQuizzes);
+    console.log('❓ Questions:', initialQuestions);
+    
+    alert('Sample data loaded successfully! Page will reload...');
+    
+    // Force reload to see changes
+    setTimeout(() => window.location.reload(), 1000);
+  };
+
   // CRUD Operations
   const addQuestion = (question) => {
     const newQuestion = { ...question, id: Date.now().toString() };
     setQuestions((prev) => [...prev, newQuestion]);
+    return newQuestion.id;
   };
 
   const updateQuestion = (id, question) => {
@@ -283,10 +320,20 @@ export function QuizProvider({ children }) {
 
   const deleteQuestion = (id) => {
     setQuestions((prev) => prev.filter((q) => q.id !== id));
+    // Remove from quizzes
+    setQuizzes(prev => prev.map(quiz => ({
+      ...quiz,
+      questions: quiz.questions ? quiz.questions.filter(qId => qId !== id) : []
+    })));
   };
 
   const addQuiz = (quiz) => {
-    const newQuiz = { ...quiz, id: Date.now().toString(), createdAt: new Date() };
+    const newQuiz = { 
+      ...quiz, 
+      id: Date.now().toString(), 
+      createdAt: new Date(),
+      questions: quiz.questions || []
+    };
     setQuizzes((prev) => [...prev, newQuiz]);
   };
 
@@ -339,6 +386,9 @@ export function QuizProvider({ children }) {
         submitQuizAttempt,
         getStudentAttempts,
         getQuizStatistics,
+        getQuizWithQuestions,
+        getQuizzesWithQuestions,
+        initializeSampleData,
       }}
     >
       {children}

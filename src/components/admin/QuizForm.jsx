@@ -156,38 +156,54 @@ export default function QuizForm({ quiz, onSave, onClose }) {
             </div>
 
             <div className="space-y-2">
-              {questions.length === 0 && (
-                <p className="text-gray-500 dark:text-gray-400">
-                  No questions added yet.
-                </p>
-              )}
-              {questions.map((q, idx) => (
-                <div
-                  key={q.id}
-                  className="flex items-center justify-between bg-gray-100 dark:bg-gray-700 p-2 rounded-lg"
-                >
-                  <span>
-                    {idx + 1}. {q.text} ({q.type})
-                  </span>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleEditQuestion(q)}
-                      className="text-blue-600 dark:text-blue-400"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteQuestion(q.id)}
-                      className="text-red-600 dark:text-red-400"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+  {questions.length === 0 && (
+    <p className="text-gray-500 dark:text-gray-400">
+      No questions added yet.
+    </p>
+  )}
+  {questions.map((q, idx) => (
+    <div
+      key={q.id}
+      className="flex items-center justify-between bg-gray-100 dark:bg-gray-700 p-3 rounded-lg"
+    >
+      <div className="flex-1">
+        <span className="font-medium">
+          {idx + 1}. {q.text} 
+        </span>
+        <div className="flex gap-2 mt-1">
+          <span className={`px-2 py-1 rounded text-xs ${
+            q.type === 'multiple-choice' ? 'bg-blue-100 text-blue-800' :
+            q.type === 'drag-drop' ? 'bg-green-100 text-green-800' :
+            q.type === 'sequence' ? 'bg-purple-100 text-purple-800' :
+            q.type === 'matching' ? 'bg-orange-100 text-orange-800' :
+            'bg-cyan-100 text-cyan-800'
+          }`}>
+            {q.type}
+          </span>
+          <span className="text-xs text-gray-500">
+            {q.points} points
+          </span>
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => handleEditQuestion(q)}
+          className="text-blue-600 dark:text-blue-400"
+        >
+          Edit
+        </button>
+        <button
+          type="button"
+          onClick={() => handleDeleteQuestion(q.id)}
+          className="text-red-600 dark:text-red-400"
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+  ))}
+</div>
           </div>
 
           <div className="flex justify-end gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
