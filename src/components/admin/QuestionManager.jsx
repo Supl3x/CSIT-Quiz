@@ -4,14 +4,16 @@ import { Plus, Edit, Trash2, Search, Filter } from 'lucide-react';
 import QuestionForm from './QuestionForm.jsx';
 
 export default function QuestionManager() {
-  const { questions, addQuestion, updateQuestion, deleteQuestion } = useQuiz();
+  const { questions, addQuestion, updateQuestion, deleteQuestion, topics, addTopic } = useQuiz();
   const [showForm, setShowForm] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [difficultyFilter, setDifficultyFilter] = useState('All');
+  const [showAddTopicModal, setShowAddTopicModal] = useState(false);
+  const [newTopicName, setNewTopicName] = useState('');
 
-  const categories = ['All', 'Programming', 'DBMS', 'Networks', 'AI', 'Cybersecurity'];
+  const categories = ['All', ...topics];
   const difficulties = ['All', 'Easy', 'Medium', 'Hard'];
 
   const filteredQuestions = questions.filter(question => {
@@ -46,6 +48,22 @@ export default function QuestionManager() {
   const handleCloseForm = () => {
     setShowForm(false);
     setEditingQuestion(null);
+  };
+
+  const handleAddTopic = () => {
+    if (!newTopicName.trim()) {
+      alert("Please enter a topic name");
+      return;
+    }
+    
+    const success = addTopic(newTopicName.trim());
+    if (success) {
+      alert(`Topic "${newTopicName.trim()}" added successfully!`);
+      setNewTopicName("");
+      setShowAddTopicModal(false);
+    } else {
+      alert(`Topic "${newTopicName.trim()}" already exists!`);
+    }
   };
 
   // Fix the true/false answer display in the question list
@@ -130,13 +148,22 @@ export default function QuestionManager() {
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Question Management</h2>
           <p className="text-gray-600 dark:text-gray-300">Create and manage quiz questions</p>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Add Question</span>
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowAddTopicModal(true)}
+            className="flex items-center space-x-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add Topic</span>
+          </button>
+          <button
+            onClick={() => setShowForm(true)}
+            className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add Question</span>
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -256,8 +283,65 @@ export default function QuestionManager() {
         <QuestionForm
           question={editingQuestion}
           onClose={handleCloseForm}
-          onSubmit={handleSaveQuestion}
+          onSave={handleSaveQuestion}
         />
+      )}
+
+      {/* Add Topic Modal */}
+      {showAddTopicModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60]">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Add New Topic</h3>
+              <button
+                onClick={() => {
+                  setShowAddTopicModal(false);
+                  setNewTopicName("");
+                }}
+                className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Topic Name
+                </label>
+                <input
+                  type="text"
+                  value={newTopicName}
+                  onChange={(e) => setNewTopicName(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleAddTopic()}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                  placeholder="e.g., Machine Learning"
+                  autoFocus
+                />
+              </div>
+
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddTopicModal(false);
+                    setNewTopicName("");
+                  }}
+                  className="px-4 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAddTopic}
+                  className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                >
+                  Add Topic
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

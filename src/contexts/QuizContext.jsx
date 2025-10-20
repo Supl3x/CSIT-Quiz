@@ -161,12 +161,13 @@ const initialQuizzes = [
   
 ];
 
-
+const initialTopics = ["Programming", "DBMS", "Networks", "AI", "Cybersecurity"];
 
 export function QuizProvider({ children }) {
   const [questions, setQuestions] = useState(initialQuestions);
   const [quizzes, setQuizzes] = useState(initialQuizzes);
   const [attempts, setAttempts] = useState([]);
+  const [topics, setTopics] = useState(initialTopics);
 
   // Load from localStorage
   useEffect(() => {
@@ -175,6 +176,7 @@ export function QuizProvider({ children }) {
     const savedQuestions = localStorage.getItem('csit-quiz-questions');
     const savedQuizzes = localStorage.getItem('csit-quiz-quizzes');
     const savedAttempts = localStorage.getItem('csit-quiz-attempts');
+    const savedTopics = localStorage.getItem('csit-quiz-topics');
 
     if (savedQuestions) {
       try {
@@ -219,6 +221,19 @@ export function QuizProvider({ children }) {
         setAttempts([]);
       }
     }
+
+    if (savedTopics) {
+      try {
+        const parsedTopics = JSON.parse(savedTopics);
+        console.log('📥 Loaded topics:', parsedTopics);
+        setTopics(parsedTopics);
+      } catch (e) {
+        console.error('❌ Error parsing saved topics:', e);
+        setTopics(initialTopics);
+      }
+    } else {
+      console.log('📝 No saved topics, using initial data');
+    }
   }, []);
 
   // Save to localStorage
@@ -233,6 +248,10 @@ export function QuizProvider({ children }) {
   useEffect(() => {
     localStorage.setItem('csit-quiz-attempts', JSON.stringify(attempts));
   }, [attempts]);
+
+  useEffect(() => {
+    localStorage.setItem('csit-quiz-topics', JSON.stringify(topics));
+  }, [topics]);
 
   // Helper function to get full quiz with question objects
   const getQuizWithQuestions = (quizId) => {
@@ -358,6 +377,28 @@ export function QuizProvider({ children }) {
     return attempts.filter((attempt) => attempt.studentId === studentId);
   };
 
+  const addTopic = (topic) => {
+    if (!topic || !topic.trim()) {
+      return false;
+    }
+    const trimmedTopic = topic.trim();
+    if (topics.includes(trimmedTopic)) {
+      return false; // Topic already exists
+    }
+    setTopics((prev) => [...prev, trimmedTopic]);
+    return true;
+  };
+
+  const deleteTopic = (topic) => {
+    // Check if any questions use this topic
+    const questionsWithTopic = questions.filter(q => q.category === topic);
+    if (questionsWithTopic.length > 0) {
+      return false; // Cannot delete topic with existing questions
+    }
+    setTopics((prev) => prev.filter((t) => t !== topic));
+    return true;
+  };
+
   const getQuizStatistics = (quizId) => {
     const quizAttempts = attempts.filter((attempt) => attempt.quizId === quizId);
     if (quizAttempts.length === 0) return null;
@@ -377,6 +418,7 @@ export function QuizProvider({ children }) {
         questions,
         quizzes,
         attempts,
+        topics,
         addQuestion,
         updateQuestion,
         deleteQuestion,
@@ -389,6 +431,8 @@ export function QuizProvider({ children }) {
         getQuizWithQuestions,
         getQuizzesWithQuestions,
         initializeSampleData,
+        addTopic,
+        deleteTopic,
       }}
     >
       {children}

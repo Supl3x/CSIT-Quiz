@@ -73,7 +73,15 @@ export default function QuizManager() {
               <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-start">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">{quiz.title}</h3>
-                  <span className="text-xs font-medium px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900 dark:text-blue-200">{quiz.category}</span>
+                  {Array.isArray(quiz.categories) && quiz.categories.length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                      {quiz.categories.map(cat => (
+                        <span key={cat} className="text-xs font-medium px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900 dark:text-blue-200">{cat}</span>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-xs font-medium px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900 dark:text-blue-200">{quiz.category}</span>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => handleEdit(quiz)}><Edit className="w-4 h-4" /></button>

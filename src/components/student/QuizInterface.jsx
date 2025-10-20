@@ -318,8 +318,8 @@ function QuestionItem({ question, onAnswer, userAnswer, questionNumber, totalQue
   );
 }
 
-export default function StudentQuizInterface() {
-  const { quizzes, getQuizzesWithQuestions, initializeSampleData, submitQuizAttempt } = useQuiz();
+export default function StudentQuizInterface({ quizId, onComplete, onCancel }) {
+  const { quizzes, getQuizzesWithQuestions, getQuizWithQuestions, initializeSampleData, submitQuizAttempt } = useQuiz();
   const [selectedQuiz, setSelectedQuiz] = useState(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState({});
@@ -331,14 +331,16 @@ export default function StudentQuizInterface() {
     quiz.isActive && quiz.questions && quiz.questions.length > 0
   );
 
-  // If no quiz is selected but there are active quizzes, auto-select the first one
+  // Select quiz based on quizId prop; fallback to first active quiz
   useEffect(() => {
-    // Only auto-select if selectedQuiz is null and activeQuizzes are available
-    if (!selectedQuiz && activeQuizzes.length > 0) {
+    if (quizId) {
+      const q = getQuizWithQuestions(quizId);
+      if (q) setSelectedQuiz(q);
+    } else if (!selectedQuiz && activeQuizzes.length > 0) {
       setSelectedQuiz(activeQuizzes[0]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeQuizzes]); // Removed selectedQuiz from dependency array to prevent loop
+  }, [quizId, quizzes]);
 
   // Get questions from the selected quiz
   const currentQuestions = selectedQuiz ? selectedQuiz.questions : [];

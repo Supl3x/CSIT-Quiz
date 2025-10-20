@@ -17,7 +17,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useQuiz } from '../../contexts/QuizContext.jsx';
-import { Plus, Edit, Trash2, Search, GripVertical, Sparkles, Filter, Eye, EyeOff } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, GripVertical, Sparkles, Filter, Eye, EyeOff, X } from 'lucide-react';
 import QuestionForm from './QuestionForm.jsx';
 
 function SortableQuestionItem({ question, onEdit, onDelete, onTogglePreview, showPreview }) {
@@ -182,7 +182,7 @@ function SortableQuestionItem({ question, onEdit, onDelete, onTogglePreview, sho
 }
 
 export default function DraggableQuestionManager() {
-  const { questions, deleteQuestion } = useQuiz();
+  const { questions, deleteQuestion, addQuestion, updateQuestion, topics, addTopic } = useQuiz();
   const [localQuestions, setLocalQuestions] = useState(questions);
   const [showForm, setShowForm] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState(null);
@@ -190,6 +190,8 @@ export default function DraggableQuestionManager() {
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [difficultyFilter, setDifficultyFilter] = useState('All');
   const [previewStates, setPreviewStates] = useState({});
+  const [showAddTopicModal, setShowAddTopicModal] = useState(false);
+  const [newTopicName, setNewTopicName] = useState('');
 
   React.useEffect(() => {
     setLocalQuestions(questions);
@@ -202,7 +204,7 @@ export default function DraggableQuestionManager() {
     })
   );
 
-  const categories = ['All', 'Programming', 'DBMS', 'Networks', 'AI', 'Cybersecurity'];
+  const categories = ['All', ...topics];
   const difficulties = ['All', 'Easy', 'Medium', 'Hard'];
 
   const filteredQuestions = localQuestions.filter(question => {
@@ -241,11 +243,36 @@ export default function DraggableQuestionManager() {
     setEditingQuestion(null);
   };
 
+  const handleSaveQuestion = (questionData) => {
+    if (editingQuestion) {
+      updateQuestion(editingQuestion.id, questionData);
+    } else {
+      addQuestion(questionData);
+    }
+    handleCloseForm();
+  };
+
   const togglePreview = (questionId) => {
     setPreviewStates(prev => ({
       ...prev,
       [questionId]: !prev[questionId]
     }));
+  };
+
+  const handleAddTopic = () => {
+    if (!newTopicName.trim()) {
+      alert("Please enter a topic name");
+      return;
+    }
+    
+    const success = addTopic(newTopicName.trim());
+    if (success) {
+      alert(`Topic "${newTopicName.trim()}" added successfully!`);
+      setNewTopicName("");
+      setShowAddTopicModal(false);
+    } else {
+      alert(`Topic "${newTopicName.trim()}" already exists!`);
+    }
   };
 
   return (
@@ -262,15 +289,26 @@ export default function DraggableQuestionManager() {
           </h2>
           <p className="text-slate-400 mt-1">Drag and drop to reorder questions</p>
         </div>
-        <motion.button
-          whileHover={{ scale: 1.05, boxShadow: '0 10px 30px rgba(59, 130, 246, 0.3)' }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-6 py-3 rounded-xl font-medium shadow-lg hover:shadow-cyan-500/50 transition-all"
-        >
-          <Plus className="w-5 h-5" />
-          <span>Add Question</span>
-        </motion.button>
+        <div className="flex gap-2">
+          <motion.button
+            whileHover={{ scale: 1.05, boxShadow: '0 10px 30px rgba(168, 85, 247, 0.3)' }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowAddTopicModal(true)}
+            className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-medium shadow-lg hover:shadow-purple-500/50 transition-all"
+          >
+            <Plus className="w-5 h-5" />
+            <span>Add Topic</span>
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.05, boxShadow: '0 10px 30px rgba(59, 130, 246, 0.3)' }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowForm(true)}
+            className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-6 py-3 rounded-xl font-medium shadow-lg hover:shadow-cyan-500/50 transition-all"
+          >
+            <Plus className="w-5 h-5" />
+            <span>Add Question</span>
+          </motion.button>
+        </div>
       </motion.div>
 
       <motion.div
@@ -386,7 +424,86 @@ export default function DraggableQuestionManager() {
               <QuestionForm
                 question={editingQuestion}
                 onClose={handleCloseForm}
+                onSave={handleSaveQuestion}
               />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Add Topic Modal */}
+      <AnimatePresence>
+        {showAddTopicModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[60]"
+            onClick={() => {
+              setShowAddTopicModal(false);
+              setNewTopicName("");
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-gradient-to-br from-slate-800/95 to-slate-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-700/50 max-w-md w-full p-6"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-white">Add New Topic</h3>
+                <button
+                  onClick={() => {
+                    setShowAddTopicModal(false);
+                    setNewTopicName("");
+                  }}
+                  className="text-slate-400 hover:text-white transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Topic Name
+                  </label>
+                  <input
+                    type="text"
+                    value={newTopicName}
+                    onChange={(e) => setNewTopicName(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleAddTopic()}
+                    className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-white transition-all"
+                    placeholder="e.g., Machine Learning"
+                    autoFocus
+                  />
+                </div>
+
+                <div className="flex justify-end gap-3">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    type="button"
+                    onClick={() => {
+                      setShowAddTopicModal(false);
+                      setNewTopicName("");
+                    }}
+                    className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors"
+                  >
+                    Cancel
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.05, boxShadow: '0 10px 30px rgba(168, 85, 247, 0.3)' }}
+                    whileTap={{ scale: 0.95 }}
+                    type="button"
+                    onClick={handleAddTopic}
+                    className="px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-medium shadow-lg hover:shadow-purple-500/50 transition-all"
+                  >
+                    Add Topic
+                  </motion.button>
+                </div>
+              </div>
             </motion.div>
           </motion.div>
         )}

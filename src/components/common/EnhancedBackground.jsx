@@ -1,8 +1,10 @@
 import React, { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
+import { useTheme } from '../../contexts/ThemeContext.jsx';
 
 export default function EnhancedBackground({ children, variant = 'default' }) {
   const canvasRef = useRef(null);
+  const { isDarkMode } = useTheme();
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -36,7 +38,8 @@ export default function EnhancedBackground({ children, variant = 'default' }) {
       draw() {
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
+        const color = isDarkMode ? `rgba(255, 255, 255, ${this.opacity})` : `rgba(0, 0, 0, ${this.opacity * 0.3})`;
+        ctx.fillStyle = color;
         ctx.fill();
       }
     }
@@ -54,7 +57,10 @@ export default function EnhancedBackground({ children, variant = 'default' }) {
 
           if (distance < 120) {
             ctx.beginPath();
-            ctx.strokeStyle = `rgba(255, 255, 255, ${0.1 * (1 - distance / 120)})`;
+            const lineColor = isDarkMode 
+              ? `rgba(255, 255, 255, ${0.1 * (1 - distance / 120)})`
+              : `rgba(0, 0, 0, ${0.05 * (1 - distance / 120)})`;
+            ctx.strokeStyle = lineColor;
             ctx.lineWidth = 1;
             ctx.moveTo(particles[i].x, particles[i].y);
             ctx.lineTo(particles[j].x, particles[j].y);
@@ -85,13 +91,13 @@ export default function EnhancedBackground({ children, variant = 'default' }) {
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [isDarkMode]);
 
   const gradients = {
-    default: 'from-slate-900 via-blue-900 to-slate-900',
-    dark: 'from-gray-900 via-slate-900 to-black',
-    blue: 'from-blue-950 via-indigo-950 to-slate-950',
-    purple: 'from-purple-950 via-violet-950 to-slate-950',
+    default: isDarkMode ? 'from-slate-900 via-blue-900 to-slate-900' : 'from-blue-50 via-indigo-50 to-slate-50',
+    dark: isDarkMode ? 'from-gray-900 via-slate-900 to-black' : 'from-gray-50 via-slate-50 to-white',
+    blue: isDarkMode ? 'from-blue-950 via-indigo-950 to-slate-950' : 'from-blue-100 via-indigo-100 to-slate-100',
+    purple: isDarkMode ? 'from-purple-950 via-violet-950 to-slate-950' : 'from-purple-100 via-violet-100 to-slate-100',
   };
 
   return (

@@ -3,22 +3,25 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 const ThemeContext = createContext(undefined);
 
 export function ThemeProvider({ children }) {
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  // Initialize with dark mode by default, then check localStorage
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const savedTheme = localStorage.getItem('csit-quiz-theme');
+    if (savedTheme) {
+      return savedTheme === 'dark';
+    }
+    // Default to dark mode
+    return true;
+  });
 
   useEffect(() => {
-    // Check for saved theme preference or system preference
-    const savedTheme = localStorage.getItem('csit-quiz-theme');
-    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
-    if (savedTheme) {
-      const isDark = savedTheme === 'dark';
-      setIsDarkMode(isDark);
-      applyTheme(isDark);
-    } else if (systemPrefersDark) {
-      setIsDarkMode(true);
-      applyTheme(true);
-    }
+    // Apply theme on mount
+    applyTheme(isDarkMode);
   }, []);
+
+  useEffect(() => {
+    // Apply theme whenever it changes
+    applyTheme(isDarkMode);
+  }, [isDarkMode]);
 
   const applyTheme = (isDark) => {
     if (isDark) {

@@ -187,15 +187,27 @@ export default function StudentDashboard() {
                     <div key={quiz.id} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
                       <div className="flex items-start justify-between mb-3">
                         <h4 className="font-semibold text-gray-900 dark:text-white">{quiz.title}</h4>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          quiz.category === 'Programming' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
-                          quiz.category === 'DBMS' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                          quiz.category === 'Networks' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
-                          quiz.category === 'AI' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' :
-                          'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                        }`}>
-                          {quiz.category}
-                        </span>
+                        {Array.isArray(quiz.categories) && quiz.categories.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {quiz.categories.map(cat => (
+                              <span key={cat} className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                cat === 'Programming' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                                cat === 'DBMS' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                                cat === 'Networks' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
+                                cat === 'AI' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' :
+                                'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                              }`}>{cat}</span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            quiz.category === 'Programming' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                            quiz.category === 'DBMS' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                            quiz.category === 'Networks' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
+                            quiz.category === 'AI' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' :
+                            'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                          }`}>{quiz.category}</span>
+                        )}
                       </div>
 
                       <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300 mb-4">

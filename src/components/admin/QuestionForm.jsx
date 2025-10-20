@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useQuiz } from '../../contexts/QuizContext.jsx';
 import { 
   X, 
   Plus, 
@@ -22,7 +23,10 @@ const QUESTION_TYPES = {
   'true-false': { icon: CheckCircle, color: 'cyan', label: 'True/False' }
 };
 
-export default function QuestionForm({ question, onClose, onSubmit }) {
+export default function QuestionForm({ question, onClose, onSave }) {
+  console.log('🔍 QuestionForm props:', { hasOnSave: !!onSave, hasQuestion: !!question });
+  const { topics } = useQuiz();
+  
   const [formData, setFormData] = useState({
     text: '',
     type: 'multiple-choice',
@@ -120,7 +124,9 @@ export default function QuestionForm({ question, onClose, onSubmit }) {
       }
     }
 
-    onSubmit(formData);
+    console.log('💾 About to call onSave with:', formData);
+    console.log('💾 onSave type:', typeof onSave);
+    onSave(formData);
   };
 
   const updateOption = (index, value) => {
@@ -601,11 +607,9 @@ export default function QuestionForm({ question, onClose, onSubmit }) {
                         className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-white transition-all"
                         required
                       >
-                        <option value="Programming">Programming</option>
-                        <option value="DBMS">DBMS</option>
-                        <option value="Networks">Networks</option>
-                        <option value="AI">AI</option>
-                        <option value="Cybersecurity">Cybersecurity</option>
+                        {topics.map(topic => (
+                          <option key={topic} value={topic}>{topic}</option>
+                        ))}
                       </select>
                     </div>
 
