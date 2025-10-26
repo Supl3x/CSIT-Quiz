@@ -11,11 +11,13 @@ import {
   Trash2,
   BarChart3,
   FileText,
-  Clock
+  Clock,
+  Bell
 } from 'lucide-react';
 import DraggableQuestionManager from './DraggableQuestionManager.jsx';
 import QuizManager from './QuizManager.jsx';
 import AnalyticsDashboard from './AnalyticsDashboard.jsx';
+import StudentProgressNotifications from './StudentProgressNotifications.jsx';
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -26,6 +28,7 @@ export default function AdminDashboard() {
     { id: 'questions', label: 'Questions', icon: FileText },
     { id: 'quizzes', label: 'Quizzes', icon: BookOpen },
     { id: 'analytics', label: 'Analytics', icon: TrendingUp },
+    { id: 'notifications', label: 'Notifications', icon: Bell },
   ];
 
   const categoryStats = questions.reduce((acc, question) => {
@@ -181,6 +184,12 @@ export default function AdminDashboard() {
       {activeTab === 'questions' && <DraggableQuestionManager />}
       {activeTab === 'quizzes' && <QuizManager />}
       {activeTab === 'analytics' && <AnalyticsDashboard />}
+      {activeTab === 'notifications' && (
+        <StudentProgressNotifications 
+          attempts={attempts} 
+          quizzes={quizzes}
+        />
+      )}
     </div>
   );
 }

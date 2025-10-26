@@ -17,6 +17,13 @@ const mockUsers = [
     name: 'Ali Ahmed',
     role: 'student',
     department: 'CSIT'
+  },
+  {
+    id: '3',
+    email: 'student2@cloud.neduet.edu.pk', 
+    name: 'Sara Khan',
+    role: 'student',
+    department: 'CSIT'
   }
 ];
 

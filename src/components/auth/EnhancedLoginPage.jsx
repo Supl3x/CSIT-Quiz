@@ -393,6 +393,10 @@ export default function EnhancedLoginPage() {
                 <motion.div
                   whileHover={{ scale: 1.02, x: 5 }}
                   className="bg-slate-900/50 backdrop-blur-xl p-4 rounded-xl border border-slate-700/50 cursor-pointer"
+                  onClick={() => {
+                    setEmail('admin@cloud.neduet.edu.pk');
+                    setPassword('password');
+                  }}
                 >
                   <p className="font-semibold text-cyan-300 mb-1">Faculty Access</p>
                   <p className="text-slate-400">admin@cloud.neduet.edu.pk</p>
@@ -400,9 +404,24 @@ export default function EnhancedLoginPage() {
                 <motion.div
                   whileHover={{ scale: 1.02, x: 5 }}
                   className="bg-slate-900/50 backdrop-blur-xl p-4 rounded-xl border border-slate-700/50 cursor-pointer"
+                  onClick={() => {
+                    setEmail('student@cloud.neduet.edu.pk');
+                    setPassword('password');
+                  }}
                 >
-                  <p className="font-semibold text-blue-300 mb-1">Student Access</p>
+                  <p className="font-semibold text-blue-300 mb-1">Student Access - Ali Ahmed</p>
                   <p className="text-slate-400">student@cloud.neduet.edu.pk</p>
+                </motion.div>
+                <motion.div
+                  whileHover={{ scale: 1.02, x: 5 }}
+                  className="bg-slate-900/50 backdrop-blur-xl p-4 rounded-xl border border-slate-700/50 cursor-pointer"
+                  onClick={() => {
+                    setEmail('student2@cloud.neduet.edu.pk');
+                    setPassword('password');
+                  }}
+                >
+                  <p className="font-semibold text-green-300 mb-1">Student Access - Sara Khan</p>
+                  <p className="text-slate-400">student2@cloud.neduet.edu.pk</p>
                 </motion.div>
               </div>
             </motion.div>

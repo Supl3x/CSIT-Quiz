@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuiz } from '../../contexts/QuizContext.jsx';
+import { useAuth } from '../../contexts/AuthContext.jsx';
+import { shuffleQuestionsForStudent, shuffleOptionsForStudent, mapAnswerToOriginal, mapOriginalToShuffled } from '../../utils/shuffleUtils.js';
 import { 
   Sparkles,
   Eye, 
@@ -33,21 +35,44 @@ const QUESTION_TYPES = {
   'codearrangement': { icon: ListOrdered, color: 'indigo', label: 'Code Arrangement' }
 };
 
-function QuestionItem({ question, onAnswer, userAnswer, questionNumber, totalQuestions, onNext, onPrevious, onSubmit, currentIndex, isLastQuestion }) {
+function QuestionItem({ question, onAnswer, userAnswer, questionNumber, totalQuestions, onNext, onPrevious, onSubmit, currentIndex, isLastQuestion, studentId }) {
   const [showPreview, setShowPreview] = useState(false);
   const [selectedOption, setSelectedOption] = useState(userAnswer || null);
+  const [shuffledOptions, setShuffledOptions] = useState([]);
+  const [optionMapping, setOptionMapping] = useState([]);
 
   const QuestionTypeIcon = QUESTION_TYPES[question.type]?.icon || Type;
   const typeColor = QUESTION_TYPES[question.type]?.color || 'blue';
 
+  // Shuffle options for multiple choice questions based on student ID
+  useEffect(() => {
+    if (question.type === 'multiple-choice' && question.options) {
+      const { shuffledOptions: shuffled, mapping } = shuffleOptionsForStudent(
+        question.options, 
+        studentId, 
+        question.id
+      );
+      setShuffledOptions(shuffled);
+      setOptionMapping(mapping);
+    }
+  }, [question.id, question.options, studentId, question.type]);
+
   // Update selectedOption if userAnswer changes (e.g., when navigating questions)
   useEffect(() => {
-    setSelectedOption(userAnswer || null);
-  }, [userAnswer, question.id]);
+    if (question.type === 'multiple-choice' && userAnswer !== null && userAnswer !== undefined && optionMapping.length > 0) {
+      // Convert original answer index to shuffled index for display
+      const shuffledIndex = mapOriginalToShuffled(userAnswer, optionMapping);
+      setSelectedOption(shuffledIndex);
+    } else {
+      setSelectedOption(userAnswer || null);
+    }
+  }, [userAnswer, question.id, optionMapping, question.type]);
 
   const handleOptionSelect = (optionIndex) => {
     setSelectedOption(optionIndex);
-    onAnswer(question.id, optionIndex);
+    // Map the shuffled option index back to the original index for scoring
+    const originalIndex = mapAnswerToOriginal(optionIndex, optionMapping);
+    onAnswer(question.id, originalIndex);
   };
 
   const handleTrueFalseSelect = (value) => {
@@ -92,7 +117,7 @@ function QuestionItem({ question, onAnswer, userAnswer, questionNumber, totalQue
       case 'multiple-choice':
         return (
           <div className="space-y-3">
-            {question.options && question.options.map((option, index) => (
+            {shuffledOptions && shuffledOptions.map((option, index) => (
               <motion.button
                 key={index}
                 initial={{ opacity: 0, x: -20 }}
@@ -320,7 +345,9 @@ function QuestionItem({ question, onAnswer, userAnswer, questionNumber, totalQue
 
 export default function StudentQuizInterface({ quizId, onComplete, onCancel }) {
   const { quizzes, getQuizzesWithQuestions, getQuizWithQuestions, initializeSampleData, submitQuizAttempt } = useQuiz();
+  const { user } = useAuth(); // Get current user for shuffling
   const [selectedQuiz, setSelectedQuiz] = useState(null);
+  const [shuffledQuestions, setShuffledQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState({});
   const [quizCompleted, setQuizCompleted] = useState(false);
@@ -335,15 +362,28 @@ export default function StudentQuizInterface({ quizId, onComplete, onCancel }) {
   useEffect(() => {
     if (quizId) {
       const q = getQuizWithQuestions(quizId);
-      if (q) setSelectedQuiz(q);
+      if (q) {
+        setSelectedQuiz(q);
+        // Shuffle questions for this specific student
+        if (user && q.questions) {
+          const shuffled = shuffleQuestionsForStudent(q.questions, user.id, q.id);
+          setShuffledQuestions(shuffled);
+        }
+      }
     } else if (!selectedQuiz && activeQuizzes.length > 0) {
-      setSelectedQuiz(activeQuizzes[0]);
+      const firstQuiz = activeQuizzes[0];
+      setSelectedQuiz(firstQuiz);
+      // Shuffle questions for this specific student
+      if (user && firstQuiz.questions) {
+        const shuffled = shuffleQuestionsForStudent(firstQuiz.questions, user.id, firstQuiz.id);
+        setShuffledQuestions(shuffled);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [quizId, quizzes]);
+  }, [quizId, quizzes, user]);
 
-  // Get questions from the selected quiz
-  const currentQuestions = selectedQuiz ? selectedQuiz.questions : [];
+  // Get questions from the shuffled quiz questions
+  const currentQuestions = shuffledQuestions.length > 0 ? shuffledQuestions : [];
   const currentQuestion = currentQuestions[currentQuestionIndex];
   const isLastQuestion = currentQuestionIndex === currentQuestions.length - 1;
 
@@ -698,6 +738,7 @@ export default function StudentQuizInterface({ quizId, onComplete, onCancel }) {
             onSubmit={handleSubmitQuiz}
             currentIndex={currentQuestionIndex}
             isLastQuestion={isLastQuestion}
+            studentId={user?.id}
           />
         )}
       </AnimatePresence>
