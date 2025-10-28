@@ -20,7 +20,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Send,
-  Check
+  Check,
+  Home,
+  Bell
 } from 'lucide-react';
 import DragDropQuestion from './DragDropQuestion.jsx';
 import CodeArrangementQuestion from './CodeArrangementQuestion.jsx';
@@ -29,8 +31,6 @@ import CodeArrangementQuestion from './CodeArrangementQuestion.jsx';
 const QUESTION_TYPES = {
   'multiple-choice': { icon: Type, color: 'blue', label: 'Multiple Choice' },
   'drag-drop': { icon: Move, color: 'green', label: 'Drag & Drop' },
-  'sequence': { icon: ListOrdered, color: 'purple', label: 'Sequence' },
-  'matching': { icon: ListOrdered, color: 'orange', label: 'Matching' },
   'true-false': { icon: CheckCircle, color: 'cyan', label: 'True/False' },
   'codearrangement': { icon: ListOrdered, color: 'indigo', label: 'Code Arrangement' }
 };
@@ -94,18 +94,31 @@ function QuestionItem({ question, onAnswer, userAnswer, questionNumber, totalQue
     switch (question.type) {
       case 'multiple-choice':
       case 'true-false':
-        // Check for specific answer value for MC/TF
         return userAnswer !== null;
       
       case 'drag-drop':
-      case 'matching':
-        // For drag-drop/matching, check if any answer is mapped
-        return typeof userAnswer === 'object' && Object.keys(userAnswer || {}).length > 0;
+        if (question.dragDropData && question.dragDropData.items && question.dragDropData.targets) {
+          const correctOrder = question.dragDropData.correctOrder || [];
+          const simpleCorrectOrderMapping = Object.fromEntries(
+            question.dragDropData.items.map((item, index) => [
+              item,
+              question.dragDropData.targets[index]
+            ])
+          );
+
+          if (Object.keys(userAnswer || {}).length === question.dragDropData.items.length) {
+            return question.dragDropData.items.every(
+              (item) => userAnswer[item] === simpleCorrectOrderMapping[item]
+            );
+          }
+        }
+        return false;
       
       case 'codearrangement':
       case 'sequence':
-        // For sequence/arrangement, check if the array has been populated
-        return Array.isArray(userAnswer) && userAnswer.length > 0;
+        const correctOrderIds = question.correctOrder?.map(item => item.id) || 
+                          question.sequenceData?.correctSequence || [];
+        return JSON.stringify(userAnswer) === JSON.stringify(correctOrderIds);
       
       default:
         return false;
@@ -178,9 +191,7 @@ function QuestionItem({ question, onAnswer, userAnswer, questionNumber, totalQue
         );
 
       case 'drag-drop':
-      case 'matching':
         return (
-          // NOTE: Assuming DragDropQuestion and CodeArrangementQuestion are available
           <DragDropQuestion
             question={question}
             onAnswer={handleDragDropAnswer}
@@ -209,7 +220,7 @@ function QuestionItem({ question, onAnswer, userAnswer, questionNumber, totalQue
 
   return (
     <motion.div
-      key={question.id} // Key added to ensure re-mount on question change for animation
+      key={question.id}
       initial={{ opacity: 0, x: 50 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -50 }}
@@ -275,7 +286,6 @@ function QuestionItem({ question, onAnswer, userAnswer, questionNumber, totalQue
           {isLastQuestion ? (
             <button
               onClick={onSubmit}
-              disabled={!isAnswered() && false} // Submission is not strictly disabled if not answered
               className="flex items-center gap-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-xl font-medium shadow-lg hover:shadow-green-500/50 transition-all"
             >
               <Send className="w-4 h-4" />
@@ -323,7 +333,6 @@ function QuestionItem({ question, onAnswer, userAnswer, questionNumber, totalQue
           >
             <h4 className="text-cyan-400 font-medium mb-2">Explanation:</h4>
             <p className="text-slate-300 text-sm">{question.explanation}</p>
-            {/* Display Correct Answer for Multiple Choice/True False */}
             {(question.type === 'multiple-choice' || question.type === 'true-false') && (
               <p className="text-sm mt-2 font-semibold">
                 Correct Answer: 
@@ -335,7 +344,6 @@ function QuestionItem({ question, onAnswer, userAnswer, questionNumber, totalQue
                 </span>
               </p>
             )}
-            
           </motion.div>
         )}
       </AnimatePresence>
@@ -345,13 +353,21 @@ function QuestionItem({ question, onAnswer, userAnswer, questionNumber, totalQue
 
 export default function StudentQuizInterface({ quizId, onComplete, onCancel }) {
   const { quizzes, getQuizzesWithQuestions, getQuizWithQuestions, initializeSampleData, submitQuizAttempt } = useQuiz();
-  const { user } = useAuth(); // Get current user for shuffling
+  const { user } = useAuth();
   const [selectedQuiz, setSelectedQuiz] = useState(null);
   const [shuffledQuestions, setShuffledQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState({});
   const [quizCompleted, setQuizCompleted] = useState(false);
   const [score, setScore] = useState(null);
+  
+  // Store shuffled questions in localStorage to maintain consistency
+  const getShuffledQuestionsForStudent = (questions, studentId, quizId) => {
+    // Add timestamp to make it unique for each attempt
+    const timestamp = new Date().getTime();
+    const shuffled = shuffleQuestionsForStudent(questions, `${studentId}-${timestamp}`, quizId);
+    return shuffled;
+  };
 
   // Get active quizzes with their full questions
   const activeQuizzes = getQuizzesWithQuestions().filter(quiz => 
@@ -360,27 +376,26 @@ export default function StudentQuizInterface({ quizId, onComplete, onCancel }) {
 
   // Select quiz based on quizId prop; fallback to first active quiz
   useEffect(() => {
-    if (quizId) {
-      const q = getQuizWithQuestions(quizId);
-      if (q) {
-        setSelectedQuiz(q);
-        // Shuffle questions for this specific student
-        if (user && q.questions) {
-          const shuffled = shuffleQuestionsForStudent(q.questions, user.id, q.id);
-          setShuffledQuestions(shuffled);
-        }
+    if (!user) return; // Exit if no user
+    
+    // Only update if we don't have a selected quiz yet or if the quizId changes
+    const shouldUpdateQuiz = !selectedQuiz || (quizId && (!selectedQuiz || selectedQuiz.id !== quizId));
+    
+    if (shouldUpdateQuiz) {
+      let targetQuiz;
+      if (quizId) {
+        targetQuiz = getQuizWithQuestions(quizId);
+      } else if (activeQuizzes.length > 0) {
+        targetQuiz = activeQuizzes[0];
       }
-    } else if (!selectedQuiz && activeQuizzes.length > 0) {
-      const firstQuiz = activeQuizzes[0];
-      setSelectedQuiz(firstQuiz);
-      // Shuffle questions for this specific student
-      if (user && firstQuiz.questions) {
-        const shuffled = shuffleQuestionsForStudent(firstQuiz.questions, user.id, firstQuiz.id);
+
+      if (targetQuiz && targetQuiz.questions) {
+        setSelectedQuiz(targetQuiz);
+        const shuffled = getShuffledQuestionsForStudent(targetQuiz.questions, user.id, targetQuiz.id);
         setShuffledQuestions(shuffled);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [quizId, quizzes, user]);
+  }, [quizId, user, activeQuizzes, getQuizWithQuestions, selectedQuiz]);
 
   // Get questions from the shuffled quiz questions
   const currentQuestions = shuffledQuestions.length > 0 ? shuffledQuestions : [];
@@ -407,7 +422,6 @@ export default function StudentQuizInterface({ quizId, onComplete, onCancel }) {
   };
 
   const handleSubmitQuiz = () => {
-    // Calculate final score
     let correct = 0;
     let totalPoints = 0;
     let maxPoints = 0;
@@ -427,19 +441,7 @@ export default function StudentQuizInterface({ quizId, onComplete, onCancel }) {
 
           case 'drag-drop':
           case 'matching':
-            // For drag-drop with dragDropData structure (based on QuizContext's initialQuestions)
             if (question.dragDropData) {
-              const correctMapping = Object.fromEntries(
-                question.dragDropData.targets.map((target, index) => [
-                  question.dragDropData.items[index], // Item is the key
-                  question.dragDropData.targets[question.dragDropData.correctOrder.indexOf(index)] // Target is the value based on correctOrder
-                ])
-              );
-              
-              // NOTE: The user answer structure for drag-drop needs to be consistent. 
-              // Assuming userAnswer is { 'dragItem': 'dropTarget', ... }
-              // The initial state definition for drag-drop makes the correct order 
-              // a simple index array [0, 1, 2, 3], meaning item[0] -> target[0], item[1] -> target[1] etc.
               const simpleCorrectOrderMapping = Object.fromEntries(
                 question.dragDropData.items.map((item, index) => [
                   item, 
@@ -447,7 +449,6 @@ export default function StudentQuizInterface({ quizId, onComplete, onCancel }) {
                 ])
               );
 
-              // Check if user has answered all parts
               if (Object.keys(userAnswer).length === question.dragDropData.items.length) {
                 isCorrect = question.dragDropData.items.every(item => 
                   userAnswer[item] === simpleCorrectOrderMapping[item]
@@ -456,7 +457,6 @@ export default function StudentQuizInterface({ quizId, onComplete, onCancel }) {
                 isCorrect = false;
               }
             } else if (question.pairs) {
-              // Pairs structure handling (not in initial data, but good to keep)
               isCorrect = question.pairs.every(pair => userAnswer[pair.left] === pair.right);
             }
             break;
@@ -465,7 +465,6 @@ export default function StudentQuizInterface({ quizId, onComplete, onCancel }) {
           case 'sequence':
             const correctOrderIds = question.correctOrder?.map(item => item.id) || 
                               question.sequenceData?.correctSequence || [];
-            // Assuming userAnswer is an array of IDs in order
             isCorrect = JSON.stringify(userAnswer) === JSON.stringify(correctOrderIds);
             break;
 
@@ -493,10 +492,9 @@ export default function StudentQuizInterface({ quizId, onComplete, onCancel }) {
     setScore(finalScore);
     setQuizCompleted(true);
 
-    // Submit to context
     submitQuizAttempt({
       quizId: selectedQuiz.id,
-      studentId: 'student-1', // Hardcoded student ID for this example
+      studentId: 'student-1',
       answers: userAnswers,
       score: finalScore.percentage,
       completedAt: new Date()
@@ -511,11 +509,13 @@ export default function StudentQuizInterface({ quizId, onComplete, onCancel }) {
   };
 
   const handleSelectDifferentQuiz = () => {
-    setSelectedQuiz(null);
     setCurrentQuestionIndex(0);
     setUserAnswers({});
     setQuizCompleted(false);
     setScore(null);
+    if (onCancel) {
+      onCancel();
+    }
   };
   
   const handleSelectQuiz = (quiz) => {
@@ -526,7 +526,6 @@ export default function StudentQuizInterface({ quizId, onComplete, onCancel }) {
     setScore(null);
   };
 
-  // Reset data function
   const handleResetData = () => {
     if (window.confirm('This will reset all quiz data to sample data. Continue?')) {
       initializeSampleData();
@@ -537,7 +536,6 @@ export default function StudentQuizInterface({ quizId, onComplete, onCancel }) {
     }
   };
 
-  // 1. If quiz is completed, show results
   if (quizCompleted && score) {
     return (
       <div className="space-y-6">
@@ -580,7 +578,153 @@ export default function StudentQuizInterface({ quizId, onComplete, onCancel }) {
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          {/* Answer Review Section */}
+          <div className="mt-8 border-t border-slate-700/50 pt-8">
+            <h4 className="text-xl font-bold text-white mb-4">Detailed Answer Review</h4>
+            <div className="space-y-4">
+              {currentQuestions.map((question, index) => {
+                const userAnswer = userAnswers[question.id];
+                const isCorrect = (() => {
+                  if (userAnswer === undefined || userAnswer === null) return false;
+                  
+                  switch (question.type) {
+                    case 'multiple-choice':
+                    case 'true-false':
+                      return userAnswer === question.correctAnswer;
+                    
+                    case 'drag-drop':
+                      if (question.dragDropData) {
+                        const correctOrderMapping = Object.fromEntries(
+                          question.dragDropData.items.map((item, i) => [
+                            item,
+                            question.dragDropData.targets[i]
+                          ])
+                        );
+                        return Object.keys(userAnswer || {}).every(
+                          key => userAnswer[key] === correctOrderMapping[key]
+                        );
+                      }
+                      return false;
+                    
+                    case 'codearrangement':
+                      const correctOrderIds = question.correctOrder?.map(item => item.id) || [];
+                      return JSON.stringify(userAnswer) === JSON.stringify(correctOrderIds);
+                    
+                    default:
+                      return false;
+                  }
+                })();
+
+                return (
+                  <div
+                    key={question.id}
+                    className={`bg-slate-800/50 rounded-xl p-6 border ${
+                      isCorrect ? 'border-green-500/30' : 'border-red-500/30'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                            isCorrect
+                              ? 'bg-green-500/20 text-green-300 border border-green-500/30'
+                              : 'bg-red-500/20 text-red-300 border border-red-500/30'
+                          }`}>
+                            {isCorrect ? 'Correct' : 'Incorrect'} • {question.points} points
+                          </span>
+                          <span className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-sm font-medium border border-blue-500/30">
+                            Question {index + 1}
+                          </span>
+                        </div>
+                        <p className="text-white mb-4">{question.text}</p>
+                        
+                        {/* Answer Display */}
+                        <div className="space-y-3">
+                          {question.type === 'multiple-choice' && (
+                            <>
+                              <div className="text-sm text-slate-400">Your Answer:</div>
+                              <div className={`p-3 rounded-lg ${
+                                isCorrect ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'
+                              }`}>
+                                {userAnswer !== null ? question.options[userAnswer] : 'No answer provided'}
+                              </div>
+                              {!isCorrect && (
+                                <>
+                                  <div className="text-sm text-slate-400 mt-2">Correct Answer:</div>
+                                  <div className="p-3 rounded-lg bg-green-500/20 text-green-300">
+                                    {question.options[question.correctAnswer]}
+                                  </div>
+                                </>
+                              )}
+                            </>
+                          )}
+
+                          {question.type === 'true-false' && (
+                            <>
+                              <div className="text-sm text-slate-400">Your Answer:</div>
+                              <div className={`p-3 rounded-lg ${
+                                isCorrect ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'
+                              }`}>
+                                {userAnswer !== null ? (userAnswer ? 'True' : 'False') : 'No answer provided'}
+                              </div>
+                              {!isCorrect && (
+                                <>
+                                  <div className="text-sm text-slate-400 mt-2">Correct Answer:</div>
+                                  <div className="p-3 rounded-lg bg-green-500/20 text-green-300">
+                                    {question.correctAnswer ? 'True' : 'False'}
+                                  </div>
+                                </>
+                              )}
+                            </>
+                          )}
+
+                          {question.type === 'drag-drop' && (
+                            <>
+                              <div className="text-sm text-slate-400">Your Matches:</div>
+                              <div className={`space-y-2 ${
+                                isCorrect ? 'text-green-300' : 'text-red-300'
+                              }`}>
+                                {question.dragDropData?.items.map((item, i) => (
+                                  <div key={i} className="flex items-center gap-2">
+                                    <span>{item}</span>
+                                    <span>→</span>
+                                    <span>{userAnswer?.[item] || 'Not matched'}</span>
+                                  </div>
+                                ))}
+                              </div>
+                              {!isCorrect && (
+                                <>
+                                  <div className="text-sm text-slate-400 mt-2">Correct Matches:</div>
+                                  <div className="space-y-2 text-green-300">
+                                    {question.dragDropData?.items.map((item, i) => (
+                                      <div key={i} className="flex items-center gap-2">
+                                        <span>{item}</span>
+                                        <span>→</span>
+                                        <span>{question.dragDropData.targets[i]}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </>
+                              )}
+                            </>
+                          )}
+
+                          {question.explanation && (
+                            <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                              <div className="text-sm text-blue-300 font-medium mb-1">Explanation:</div>
+                              <div className="text-slate-300">{question.explanation}</div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
             <button
               onClick={handleRestartQuiz}
               className="flex items-center gap-2 bg-gradient-to-r from-cyan-600 to-blue-600 text-white px-6 py-3 rounded-xl font-medium shadow-lg hover:shadow-cyan-500/50 transition-all"
@@ -601,7 +745,6 @@ export default function StudentQuizInterface({ quizId, onComplete, onCancel }) {
     );
   }
   
-  // 2. If no quizzes are available, show a message and the reset button
   if (activeQuizzes.length === 0) {
     return (
       <div className="space-y-6">
@@ -639,7 +782,6 @@ export default function StudentQuizInterface({ quizId, onComplete, onCancel }) {
     );
   }
 
-  // 3. If selectedQuiz is null (or reset), show the list of quizzes
   if (!selectedQuiz) {
     return (
       <div className="space-y-6">
@@ -705,7 +847,6 @@ export default function StudentQuizInterface({ quizId, onComplete, onCancel }) {
     );
   }
 
-  // 4. Main Quiz Interface
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
@@ -716,13 +857,22 @@ export default function StudentQuizInterface({ quizId, onComplete, onCancel }) {
           <h2 className="text-3xl font-bold text-white mb-1">{selectedQuiz.title}</h2>
           <p className="text-slate-400">{selectedQuiz.category} | {currentQuestions.length} Questions</p>
         </motion.div>
-        <button
-          onClick={handleSelectDifferentQuiz}
-          className="flex items-center gap-2 bg-slate-700/50 text-slate-300 px-4 py-2 rounded-xl text-sm font-medium hover:bg-slate-600/50 transition-all"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Change Quiz
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => onCancel()} // Using onCancel to return to dashboard
+            className="flex items-center gap-2 bg-cyan-600/50 text-cyan-300 px-4 py-2 rounded-xl text-sm font-medium hover:bg-cyan-600/70 transition-all"
+          >
+            <Home className="w-4 h-4" />
+            Home
+          </button>
+          <button
+            onClick={handleSelectDifferentQuiz}
+            className="flex items-center gap-2 bg-slate-700/50 text-slate-300 px-4 py-2 rounded-xl text-sm font-medium hover:bg-slate-600/50 transition-all"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Change Quiz
+          </button>
+        </div>
       </div>
 
       <AnimatePresence mode="wait">

@@ -2,7 +2,8 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const QuizContext = createContext(undefined);
 
-// COMPLETELY NEW DATA STRUCTURE - NO CATEGORY FILTERING
+// Import notification context
+import { useNotification } from './useNotification.js';
 const initialQuestions = [
   // ========== PROGRAMMING QUIZ QUESTIONS ==========
   {
@@ -97,6 +98,7 @@ const initialQuestions = [
     points: 10,
     explanation: 'The Network layer handles routing and addressing.'
   },
+
   {
     id: 'net-quiz-2',
     type: 'true-false', 
@@ -133,7 +135,6 @@ const initialQuizzes = [
     isActive: true,
     createdBy: '1',
     createdAt: new Date('2024-01-01'),
-    // ONLY Programming quiz questions
     questions: ['prog-quiz-1', 'prog-quiz-2', 'prog-quiz-3']
   },
   {
@@ -144,7 +145,6 @@ const initialQuizzes = [
     isActive: true,
     createdBy: '1',
     createdAt: new Date('2024-01-02'),
-    // ONLY DBMS quiz questions
     questions: ['dbms-quiz-1', 'dbms-quiz-2', 'dbms-quiz-3']
   },
   {
@@ -155,107 +155,175 @@ const initialQuizzes = [
     isActive: true,
     createdBy: '1',
     createdAt: new Date('2024-01-03'),
-    // ONLY Networks quiz questions
     questions: ['net-quiz-1', 'net-quiz-2', 'net-quiz-3']
   }
-  
 ];
 
 const initialTopics = ["Programming", "DBMS", "Networks", "AI", "Cybersecurity"];
 
 export function QuizProvider({ children }) {
-  const [questions, setQuestions] = useState(initialQuestions);
-  const [quizzes, setQuizzes] = useState(initialQuizzes);
+  const { addNotification } = useNotification();
+  const [questions, setQuestions] = useState([]);
+  const [quizzes, setQuizzes] = useState([]);
   const [attempts, setAttempts] = useState([]);
-  const [topics, setTopics] = useState(initialTopics);
+  const [topics, setTopics] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Load from localStorage
+  // Enhanced localStorage functions
+  const loadFromLocalStorage = (key, defaultValue) => {
+    try {
+      const item = localStorage.getItem(key);
+      if (item) {
+        return JSON.parse(item);
+      }
+    } catch (error) {
+      console.error(`❌ Error loading ${key} from localStorage:`, error);
+    }
+    return defaultValue;
+  };
+
+  const saveToLocalStorage = (key, value) => {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch (error) {
+      console.error(`❌ Error saving ${key} to localStorage:`, error);
+    }
+  };
+
+  // Load from localStorage on mount
   useEffect(() => {
     console.log('🔄 Loading data from localStorage...');
-    
-    const savedQuestions = localStorage.getItem('csit-quiz-questions');
-    const savedQuizzes = localStorage.getItem('csit-quiz-quizzes');
-    const savedAttempts = localStorage.getItem('csit-quiz-attempts');
-    const savedTopics = localStorage.getItem('csit-quiz-topics');
+    setIsLoading(true);
 
-    if (savedQuestions) {
-      try {
-        const parsed = JSON.parse(savedQuestions);
-        console.log('📥 Loaded questions:', parsed);
-        setQuestions(parsed);
-      } catch (e) {
-        console.error('❌ Error parsing saved questions:', e);
-        setQuestions(initialQuestions);
-      }
-    } else {
-      console.log('📝 No saved questions, using initial data');
-    }
-    
-    if (savedQuizzes) {
-      try {
-        const parsedQuizzes = JSON.parse(savedQuizzes);
-        console.log('📥 Loaded quizzes:', parsedQuizzes);
-        const quizzesWithDates = parsedQuizzes.map((quiz) => ({
-          ...quiz,
-          createdAt: quiz.createdAt ? new Date(quiz.createdAt) : new Date(),
-        }));
-        setQuizzes(quizzesWithDates);
-      } catch (e) {
-        console.error('❌ Error parsing saved quizzes:', e);
-        setQuizzes(initialQuizzes);
-      }
-    } else {
-      console.log('📝 No saved quizzes, using initial data');
-    }
-    
-    if (savedAttempts) {
-      try {
-        const parsedAttempts = JSON.parse(savedAttempts);
-        const attemptsWithDates = parsedAttempts.map((attempt) => ({
-          ...attempt,
-          completedAt: attempt.completedAt ? new Date(attempt.completedAt) : new Date(),
-        }));
-        setAttempts(attemptsWithDates);
-      } catch (e) {
-        console.error('Error parsing saved attempts:', e);
-        setAttempts([]);
-      }
-    }
+    const savedQuestions = loadFromLocalStorage('csit-quiz-questions', initialQuestions);
+    const savedQuizzes = loadFromLocalStorage('csit-quiz-quizzes', initialQuizzes);
+    const savedAttempts = loadFromLocalStorage('csit-quiz-attempts', []);
+    const savedTopics = loadFromLocalStorage('csit-quiz-topics', initialTopics);
 
-    if (savedTopics) {
-      try {
-        const parsedTopics = JSON.parse(savedTopics);
-        console.log('📥 Loaded topics:', parsedTopics);
-        setTopics(parsedTopics);
-      } catch (e) {
-        console.error('❌ Error parsing saved topics:', e);
-        setTopics(initialTopics);
-      }
-    } else {
-      console.log('📝 No saved topics, using initial data');
-    }
+    // Ensure dates are properly parsed
+    const quizzesWithDates = savedQuizzes.map(quiz => ({
+      ...quiz,
+      createdAt: quiz.createdAt ? new Date(quiz.createdAt) : new Date(),
+    }));
+
+    const attemptsWithDates = savedAttempts.map(attempt => ({
+      ...attempt,
+      completedAt: attempt.completedAt ? new Date(attempt.completedAt) : new Date(),
+    }));
+
+    setQuestions(savedQuestions);
+    setQuizzes(quizzesWithDates);
+    setAttempts(attemptsWithDates);
+    setTopics(savedTopics);
+    
+    console.log('✅ Data loaded:', {
+      questions: savedQuestions.length,
+      quizzes: quizzesWithDates.length,
+      attempts: attemptsWithDates.length,
+      topics: savedTopics.length
+    });
+    
+    setIsLoading(false);
   }, []);
 
-  // Save to localStorage
+  // Save to localStorage when data changes
   useEffect(() => {
-    localStorage.setItem('csit-quiz-questions', JSON.stringify(questions));
-  }, [questions]);
+    if (!isLoading) {
+      saveToLocalStorage('csit-quiz-questions', questions);
+    }
+  }, [questions, isLoading]);
 
   useEffect(() => {
-    localStorage.setItem('csit-quiz-quizzes', JSON.stringify(quizzes));
-  }, [quizzes]);
+    if (!isLoading) {
+      saveToLocalStorage('csit-quiz-quizzes', quizzes);
+    }
+  }, [quizzes, isLoading]);
 
   useEffect(() => {
-    localStorage.setItem('csit-quiz-attempts', JSON.stringify(attempts));
-  }, [attempts]);
+    if (!isLoading) {
+      saveToLocalStorage('csit-quiz-attempts', attempts);
+    }
+  }, [attempts, isLoading]);
 
   useEffect(() => {
-    localStorage.setItem('csit-quiz-topics', JSON.stringify(topics));
-  }, [topics]);
+    if (!isLoading) {
+      saveToLocalStorage('csit-quiz-topics', topics);
+    }
+  }, [topics, isLoading]);
+
+  // Data Management Functions
+  const exportData = () => {
+    const data = {
+      questions,
+      quizzes,
+      attempts,
+      topics,
+      exportedAt: new Date().toISOString(),
+      version: '1.0'
+    };
+    
+    const dataStr = JSON.stringify(data, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(dataBlob);
+    link.download = `csit-quiz-backup-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    console.log('📤 Data exported successfully');
+  };
+
+  const importData = (jsonData) => {
+    try {
+      const data = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
+      
+      if (data.questions) setQuestions(data.questions);
+      if (data.quizzes) setQuizzes(data.quizzes);
+      if (data.attempts) setAttempts(data.attempts);
+      if (data.topics) setTopics(data.topics);
+      
+      console.log('📥 Data imported successfully');
+      return true;
+    } catch (error) {
+      console.error('❌ Error importing data:', error);
+      return false;
+    }
+  };
+
+  const clearAllData = () => {
+    if (window.confirm('⚠️ WARNING: This will delete ALL quiz data including questions, quizzes, and attempts. This cannot be undone. Are you sure?')) {
+      setQuestions([]);
+      setQuizzes([]);
+      setAttempts([]);
+      setTopics(initialTopics);
+      
+      // Clear localStorage
+      localStorage.removeItem('csit-quiz-questions');
+      localStorage.removeItem('csit-quiz-quizzes');
+      localStorage.removeItem('csit-quiz-attempts');
+      localStorage.removeItem('csit-quiz-topics');
+      
+      console.log('🗑️ All data cleared');
+    }
+  };
+
+  const resetToSampleData = () => {
+    if (window.confirm('This will replace all current data with sample data. Continue?')) {
+      setQuestions(initialQuestions);
+      setQuizzes(initialQuizzes);
+      setAttempts([]);
+      setTopics(initialTopics);
+      
+      console.log('🔄 Reset to sample data');
+      
+      alert('Sample data loaded successfully!');
+    }
+  };
 
   // Helper function to get full quiz with question objects
   const getQuizWithQuestions = (quizId) => {
-    console.log(`🔍 Getting quiz: ${quizId}`);
     const quiz = quizzes.find(q => q.id === quizId);
     
     if (!quiz) {
@@ -269,66 +337,28 @@ export function QuizProvider({ children }) {
     }
     
     const quizQuestions = quiz.questions
-      .map(questionId => {
-        const question = questions.find(q => q.id === questionId);
-        if (!question) {
-          console.log(`❌ Question ${questionId} not found in questions list`);
-        }
-        return question;
-      })
+      .map(questionId => questions.find(q => q.id === questionId))
       .filter(q => q !== undefined);
 
-    console.log(`✅ Quiz ${quizId} loaded ${quizQuestions.length} questions:`, quizQuestions.map(q => q.text));
-    
     return {
       ...quiz,
-      questions: quizQuestions
+      questions: quizQuestions,
+      totalQuestions: quizQuestions.length
     };
   };
 
   // Get all quizzes with their full questions
   const getQuizzesWithQuestions = () => {
-    console.log('🔄 Getting all quizzes with questions...');
-    const quizzesWithQuestions = quizzes.map(quiz => getQuizWithQuestions(quiz.id)).filter(quiz => quiz !== null);
-    console.log('✅ All quizzes with questions:', quizzesWithQuestions.map(q => ({
-      title: q.title,
-      questionCount: q.questions.length,
-      questions: q.questions.map(qq => qq.text)
-    })));
-    return quizzesWithQuestions;
-  };
-
-  // Initialize sample data (for testing)
-  const initializeSampleData = () => {
-    console.log('🔄 Initializing sample data...');
-    
-    // Clear everything first
-    localStorage.removeItem('csit-quiz-questions');
-    localStorage.removeItem('csit-quiz-quizzes');
-    localStorage.removeItem('csit-quiz-attempts');
-    
-    setQuestions(initialQuestions);
-    setQuizzes(initialQuizzes);
-    setAttempts([]);
-    
-    // Set fresh data
-    localStorage.setItem('csit-quiz-questions', JSON.stringify(initialQuestions));
-    localStorage.setItem('csit-quiz-quizzes', JSON.stringify(initialQuizzes));
-    localStorage.setItem('csit-quiz-attempts', JSON.stringify([]));
-    
-    console.log('✅ Sample data initialized!');
-    console.log('📊 Quizzes:', initialQuizzes);
-    console.log('❓ Questions:', initialQuestions);
-    
-    alert('Sample data loaded successfully! Page will reload...');
-    
-    // Force reload to see changes
-    setTimeout(() => window.location.reload(), 1000);
+    return quizzes.map(quiz => getQuizWithQuestions(quiz.id)).filter(quiz => quiz !== null);
   };
 
   // CRUD Operations
   const addQuestion = (question) => {
-    const newQuestion = { ...question, id: Date.now().toString() };
+    const newQuestion = { 
+      ...question, 
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString()
+    };
     setQuestions((prev) => [...prev, newQuestion]);
     return newQuestion.id;
   };
@@ -351,13 +381,19 @@ export function QuizProvider({ children }) {
       ...quiz, 
       id: Date.now().toString(), 
       createdAt: new Date(),
-      questions: quiz.questions || []
+      questions: quiz.questions || [],
+      totalQuestions: quiz.questions ? quiz.questions.length : 0
     };
     setQuizzes((prev) => [...prev, newQuiz]);
+    return newQuiz.id;
   };
 
   const updateQuiz = (id, quiz) => {
-    setQuizzes((prev) => prev.map((q) => (q.id === id ? { ...q, ...quiz } : q)));
+    setQuizzes((prev) => prev.map((q) => (q.id === id ? { 
+      ...q, 
+      ...quiz,
+      totalQuestions: quiz.questions ? quiz.questions.length : q.questions.length
+    } : q)));
   };
 
   const deleteQuiz = (id) => {
@@ -369,8 +405,10 @@ export function QuizProvider({ children }) {
       ...attempt,
       id: Date.now().toString(),
       completedAt: new Date(),
+      timeSpent: attempt.timeSpent || 0
     };
     setAttempts((prev) => [...prev, newAttempt]);
+    return newAttempt.id;
   };
 
   const getStudentAttempts = (studentId) => {
@@ -404,21 +442,43 @@ export function QuizProvider({ children }) {
     if (quizAttempts.length === 0) return null;
 
     const totalAttempts = quizAttempts.length;
-    const averageScore =
-      quizAttempts.reduce((sum, attempt) => sum + attempt.score, 0) / totalAttempts;
+    const averageScore = Math.round(
+      quizAttempts.reduce((sum, attempt) => sum + attempt.score, 0) / totalAttempts
+    );
     const highestScore = Math.max(...quizAttempts.map((a) => a.score));
     const lowestScore = Math.min(...quizAttempts.map((a) => a.score));
 
     return { totalAttempts, averageScore, highestScore, lowestScore };
   };
 
+  // Get storage statistics
+  const getStorageStats = () => {
+    const stats = {
+      questions: questions.length,
+      quizzes: quizzes.length,
+      attempts: attempts.length,
+      topics: topics.length,
+      lastUpdated: new Date().toLocaleString()
+    };
+    
+    // Calculate approximate storage size
+    const dataStr = JSON.stringify({ questions, quizzes, attempts, topics });
+    stats.approximateSize = Math.round((new Blob([dataStr]).size / 1024) * 100) / 100; // KB
+    
+    return stats;
+  };
+
   return (
     <QuizContext.Provider
       value={{
+        // State
         questions,
         quizzes,
         attempts,
         topics,
+        isLoading,
+        
+        // CRUD Operations
         addQuestion,
         updateQuestion,
         deleteQuestion,
@@ -428,9 +488,32 @@ export function QuizProvider({ children }) {
         submitQuizAttempt,
         getStudentAttempts,
         getQuizStatistics,
+        
+        // Question Validation
+        validateAnswer: (question, answer) => {
+          switch (question.type) {
+            case 'multiple-choice':
+              return answer === question.correctAnswer;
+            case 'true-false':
+              return answer === question.correctAnswer;
+            case 'drag-drop':
+              return JSON.stringify(Object.values(answer)) === JSON.stringify(question.dragDropData.correctOrder);
+
+            default:
+              return false;
+          }
+        },
+
+        // Data Management
         getQuizWithQuestions,
         getQuizzesWithQuestions,
-        initializeSampleData,
+        exportData,
+        importData,
+        clearAllData,
+        resetToSampleData,
+        getStorageStats,
+        
+        // Topic Management
         addTopic,
         deleteTopic,
       }}

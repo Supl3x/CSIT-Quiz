@@ -12,7 +12,8 @@ import {
 } from 'lucide-react';
 
 export default function AnalyticsDashboard() {
-  const { questions, quizzes, attempts } = useQuiz();
+  // ✅ Safe destructuring to prevent undefined errors
+  const { questions = [], quizzes = [], attempts = [] } = useQuiz();
 
   // Calculate overall statistics
   const totalQuestions = questions.length;
@@ -36,12 +37,16 @@ export default function AnalyticsDashboard() {
 
   // Calculate category-wise performance from attempts
   attempts.forEach(attempt => {
+    // ✅ Skip if categoryScores missing or invalid
+    if (!attempt || !attempt.categoryScores || typeof attempt.categoryScores !== 'object') return;
+
     Object.entries(attempt.categoryScores).forEach(([category, scores]) => {
       if (categoryStats[category]) {
         categoryStats[category].attempts++;
         const categoryScore = (scores.correct / scores.total) * 100;
         categoryStats[category].totalScore += categoryScore;
-        categoryStats[category].avgScore = categoryStats[category].totalScore / categoryStats[category].attempts;
+        categoryStats[category].avgScore =
+          categoryStats[category].totalScore / categoryStats[category].attempts;
       }
     });
   });
@@ -54,15 +59,15 @@ export default function AnalyticsDashboard() {
 
   // Performance metrics
   const averageScore = attempts.length > 0 
-    ? Math.round(attempts.reduce((sum, attempt) => sum + attempt.score, 0) / attempts.length)
+    ? Math.round(attempts.reduce((sum, attempt) => sum + (attempt.score || 0), 0) / attempts.length)
     : 0;
 
   const highestScore = attempts.length > 0 
-    ? Math.max(...attempts.map(attempt => attempt.score))
+    ? Math.max(...attempts.map(a => a.score || 0))
     : 0;
 
   const lowestScore = attempts.length > 0 
-    ? Math.min(...attempts.map(attempt => attempt.score))
+    ? Math.min(...attempts.map(a => a.score || 0))
     : 0;
 
   // Weak areas identification
@@ -289,6 +294,7 @@ export default function AnalyticsDashboard() {
         ) : (
           <div className="space-y-4">
             {attempts
+              .filter(a => !!a.completedAt)
               .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
               .slice(0, 10)
               .map((attempt) => {

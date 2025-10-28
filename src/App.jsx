@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { AuthProvider, useAuth } from './contexts/AuthContext.jsx';
 import { QuizProvider } from './contexts/QuizContext.jsx';
 import { ThemeProvider } from './contexts/ThemeContext.jsx';
+import { NotificationProvider } from './contexts/NotificationProvider.jsx';
 import EnhancedLoginPage from './components/auth/EnhancedLoginPage.jsx';
 import EnhancedAdminDashboard from './components/admin/EnhancedAdminDashboard.jsx';
 import StudentDashboard from './components/student/StudentDashboard.jsx';
@@ -64,13 +65,15 @@ function AppContent() {
 
 function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <QuizProvider>
-          <AppContent />
-        </QuizProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    <NotificationProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <QuizProvider>
+            <AppContent />
+          </QuizProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </NotificationProvider>
   );
 }
 

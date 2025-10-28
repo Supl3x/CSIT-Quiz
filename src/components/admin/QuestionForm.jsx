@@ -18,8 +18,6 @@ import {
 const QUESTION_TYPES = {
   'multiple-choice': { icon: Type, color: 'blue', label: 'Multiple Choice' },
   'drag-drop': { icon: Move, color: 'green', label: 'Drag & Drop' },
-  'sequence': { icon: ListOrdered, color: 'purple', label: 'Sequence' },
-  'matching': { icon: Link, color: 'orange', label: 'Matching' },
   'true-false': { icon: CheckCircle, color: 'cyan', label: 'True/False' }
 };
 
@@ -27,32 +25,34 @@ export default function QuestionForm({ question, onClose, onSave }) {
   console.log('🔍 QuestionForm props:', { hasOnSave: !!onSave, hasQuestion: !!question });
   const { topics } = useQuiz();
   
-  const [formData, setFormData] = useState({
-    text: '',
-    type: 'multiple-choice',
-    options: ['', '', '', ''],
-    correctAnswer: 0,
-    category: 'Programming',
-    difficulty: 'Medium',
-    points: 10,
-    explanation: '',
-    dragDropData: {
-      items: ['', '', '', ''],
-      correctOrder: [0, 1, 2, 3],
-      instruction: 'Drag the items to arrange them in the correct order:'
-    },
-    sequenceData: {
-      items: ['', '', '', ''],
-      correctSequence: [0, 1, 2, 3]
-    },
-    matchingData: {
-      pairs: [
-        { left: '', right: '' },
-        { left: '', right: '' },
-        { left: '', right: '' }
-      ]
-    }
-  });
+ const [formData, setFormData] = useState({
+  text: '',
+  type: 'multiple-choice',
+  options: ['', '', '', ''],
+  correctAnswer: 0,
+  category: 'Programming',
+  difficulty: 'Medium',
+  points: 10,
+  explanation: '',
+
+  dragDropData: {
+    items: ['', '', '', ''],
+    targets: ['', '', '', ''],
+    correctMatches: [0, 1, 2, 3],
+    instruction: 'Drag each item to its matching target:',
+  }, // ✅ comma added here
+
+
+
+  matchingData: {
+    pairs: [
+      { left: '', right: '' },
+      { left: '', right: '' },
+      { left: '', right: '' },
+    ],
+  },
+});
+
 
   const [activeTab, setActiveTab] = useState('basic');
 
@@ -320,65 +320,98 @@ export default function QuestionForm({ question, onClose, onSave }) {
         );
 
       case 'drag-drop':
-        return (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Instruction Text
-              </label>
+  return (
+    <div className="space-y-5">
+      <div>
+        <label className="block text-sm font-medium text-slate-300 mb-2">
+          Instruction
+        </label>
+        <input
+          type="text"
+          value={formData.dragDropData.instruction}
+          onChange={(e) => setFormData(prev => ({
+            ...prev,
+            dragDropData: { ...prev.dragDropData, instruction: e.target.value }
+          }))}
+          className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-slate-300 mb-3">
+          Drag & Drop Pairs
+        </label>
+        <div className="space-y-3">
+          {formData.dragDropData.items.map((item, index) => (
+            <div key={index} className="flex items-center space-x-3">
               <input
                 type="text"
-                value={formData.dragDropData.instruction}
-                onChange={(e) => setFormData(prev => ({
-                  ...prev,
-                  dragDropData: { ...prev.dragDropData, instruction: e.target.value }
-                }))}
-                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-white transition-all"
-                placeholder="Enter instruction text..."
+                value={item}
+                onChange={(e) => {
+                  const newItems = [...formData.dragDropData.items];
+                  newItems[index] = e.target.value;
+                  setFormData(prev => ({
+                    ...prev,
+                    dragDropData: { ...prev.dragDropData, items: newItems }
+                  }));
+                }}
+                className="flex-1 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
+                placeholder={`Item ${index + 1}`}
               />
-            </div>
-
-            <label className="block text-sm font-medium text-slate-300 mb-3">
-              Drag & Drop Items
-            </label>
-            <div className="space-y-3">
-              {formData.dragDropData.items.map((item, index) => (
-                <div key={index} className="flex items-center space-x-3">
-                  <span className="w-8 h-8 bg-slate-700 text-slate-400 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0">
-                    {index + 1}
-                  </span>
-                  <input
-                    type="text"
-                    value={item}
-                    onChange={(e) => updateDragDropItem(index, e.target.value)}
-                    required
-                    className="flex-1 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-white transition-all"
-                    placeholder={`Item ${index + 1}`}
-                  />
-                  {formData.dragDropData.items.length > 2 && (
-                    <button
-                      type="button"
-                      onClick={() => removeDragDropItem(index)}
-                      className="p-2 text-slate-400 hover:text-red-400 transition-colors"
-                    >
-                      <Minus className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-            {formData.dragDropData.items.length < 6 && (
+              <span className="text-slate-500">→</span>
+              <input
+                type="text"
+                value={formData.dragDropData.targets[index]}
+                onChange={(e) => {
+                  const newTargets = [...formData.dragDropData.targets];
+                  newTargets[index] = e.target.value;
+                  setFormData(prev => ({
+                    ...prev,
+                    dragDropData: { ...prev.dragDropData, targets: newTargets }
+                  }));
+                }}
+                className="flex-1 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
+                placeholder={`Target ${index + 1}`}
+              />
               <button
                 type="button"
-                onClick={addDragDropItem}
-                className="flex items-center space-x-2 text-cyan-400 hover:text-cyan-300 text-sm"
+                onClick={() => {
+                  const newItems = [...formData.dragDropData.items];
+                  const newTargets = [...formData.dragDropData.targets];
+                  newItems.splice(index, 1);
+                  newTargets.splice(index, 1);
+                  setFormData(prev => ({
+                    ...prev,
+                    dragDropData: { ...prev.dragDropData, items: newItems, targets: newTargets }
+                  }));
+                }}
+                className="px-3 py-1 bg-red-600 hover:bg-red-700 rounded-lg text-white text-sm"
               >
-                <Plus className="w-4 h-4" />
-                <span>Add Item</span>
+                Remove
               </button>
-            )}
-          </div>
-        );
+            </div>
+          ))}
+        </div>
+
+        <button
+          type="button"
+          onClick={() => {
+            setFormData(prev => ({
+              ...prev,
+              dragDropData: {
+                ...prev.dragDropData,
+                items: [...prev.dragDropData.items, ''],
+                targets: [...prev.dragDropData.targets, ''],
+              }
+            }));
+          }}
+          className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white text-sm"
+        >
+          Add Pair
+        </button>
+      </div>
+    </div>
+  );
 
       case 'sequence':
         return (

@@ -316,7 +316,7 @@ export default function QuizForm({ quiz, onSave, onClose }) {
                           q.type === 'multiple-choice' ? 'bg-blue-100 text-blue-800' :
                           q.type === 'drag-drop' ? 'bg-green-100 text-green-800' :
                           q.type === 'sequence' ? 'bg-purple-100 text-purple-800' :
-                          q.type === 'matching' ? 'bg-orange-100 text-orange-800' :
+
                           'bg-cyan-100 text-cyan-800'
                         }`}>
                           {q.type}

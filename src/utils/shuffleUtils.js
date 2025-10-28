@@ -22,23 +22,18 @@ function seededRandom(seed) {
 }
 
 /**
- * Shuffle array deterministically based on student ID and quiz ID
- * Same student + same quiz = same order every time
- * Different students = different orders
+ * Shuffle array randomly based on student ID and quiz ID
+ * New random order for each attempt
  */
 export function shuffleQuestionsForStudent(questions, studentId, quizId) {
   if (!questions || questions.length === 0) return [];
   
-  // Create a unique seed combining student ID and quiz ID
-  const seed = hashString(`${studentId}-${quizId}`);
-  
   // Create a copy to avoid mutating original
   const shuffled = [...questions];
   
-  // Fisher-Yates shuffle with seeded random
+  // Fisher-Yates shuffle with Math.random()
   for (let i = shuffled.length - 1; i > 0; i--) {
-    const randomSeed = seed + i; // Different seed for each position
-    const j = Math.floor(seededRandom(randomSeed) * (i + 1));
+    const j = Math.floor(Math.random() * (i + 1));
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
   
