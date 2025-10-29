@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuiz } from '../../contexts/QuizContext.jsx';
 import { useAuth } from '../../contexts/AuthContext.jsx';
+import { useNotification } from '../../contexts/useNotification.js';
 import { shuffleQuestionsForStudent, shuffleOptionsForStudent, mapAnswerToOriginal, mapOriginalToShuffled } from '../../utils/shuffleUtils.js';
 import { 
   Sparkles,
@@ -353,12 +354,15 @@ function QuestionItem({ question, onAnswer, userAnswer, questionNumber, totalQue
 export default function QuizInterface({ quizId, onComplete, onCancel }) {
   const { quizzes, getQuizzesWithQuestions, getQuizWithQuestions, initializeSampleData, submitQuizAttempt } = useQuiz();
   const { user } = useAuth();
+  const { addNotification } = useNotification();
   const [selectedQuiz, setSelectedQuiz] = useState(null);
   const [shuffledQuestions, setShuffledQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState({});
   const [quizCompleted, setQuizCompleted] = useState(false);
   const [score, setScore] = useState(null);
+  const [timeRemaining, setTimeRemaining] = useState(null); // in seconds
+  const [timerActive, setTimerActive] = useState(false);
   
   // Store shuffled questions in localStorage to maintain consistency
   const getShuffledQuestionsForStudent = (questions, studentId, quizId) => {
@@ -391,10 +395,60 @@ export default function QuizInterface({ quizId, onComplete, onCancel }) {
         setUserAnswers({});
         setQuizCompleted(false);
         setScore(null);
+        // Initialize timer
+        if (q.duration) {
+          setTimeRemaining(q.duration * 60); // Convert minutes to seconds
+          setTimerActive(true);
+        }
       }
     }
     // If no quizId provided, let user select from available quizzes
   }, [quizId, user]);
+
+  // Timer effect - countdown every second
+  useEffect(() => {
+    let interval = null;
+    
+    if (timerActive && timeRemaining > 0 && !quizCompleted) {
+      interval = setInterval(() => {
+        setTimeRemaining(prev => {
+          if (prev <= 1) {
+            // Time's up! Auto-submit the quiz
+            setTimerActive(false);
+            addNotification('Time\'s up! Quiz submitted automatically.', 'warning');
+            handleSubmitQuiz();
+            return 0;
+          }
+          
+          // Show warnings at specific time points
+          if (prev === 300) { // 5 minutes remaining
+            addNotification('⏰ 5 minutes remaining!', 'warning');
+          } else if (prev === 120) { // 2 minutes remaining
+            addNotification('⏰ 2 minutes remaining!', 'warning');
+          } else if (prev === 60) { // 1 minute remaining
+            addNotification('⚠️ 1 minute remaining!', 'error');
+          } else if (prev === 30) { // 30 seconds remaining
+            addNotification('🚨 30 seconds remaining!', 'error');
+          }
+          
+          return prev - 1;
+        });
+      }, 1000);
+    } else if (timeRemaining === 0 || quizCompleted) {
+      setTimerActive(false);
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [timerActive, timeRemaining, quizCompleted, addNotification]);
+
+  // Format time display (MM:SS)
+  const formatTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
 
   // Get questions from the shuffled quiz questions
   const currentQuestions = shuffledQuestions.length > 0 ? shuffledQuestions : [];
@@ -421,6 +475,9 @@ export default function QuizInterface({ quizId, onComplete, onCancel }) {
   };
 
   const handleSubmitQuiz = () => {
+    // Stop the timer
+    setTimerActive(false);
+    
     let correct = 0;
     let totalPoints = 0;
     let maxPoints = 0;
@@ -505,6 +562,11 @@ export default function QuizInterface({ quizId, onComplete, onCancel }) {
     setUserAnswers({});
     setQuizCompleted(false);
     setScore(null);
+    // Restart timer
+    if (selectedQuiz.duration) {
+      setTimeRemaining(selectedQuiz.duration * 60);
+      setTimerActive(true);
+    }
   };
 
   const handleSelectDifferentQuiz = () => {
@@ -515,6 +577,9 @@ export default function QuizInterface({ quizId, onComplete, onCancel }) {
     setQuizCompleted(false);
     setScore(null);
     setShuffledQuestions([]);
+    // Stop timer
+    setTimerActive(false);
+    setTimeRemaining(null);
     
     // Call parent callback to return to quiz selection
     if (onCancel) {
@@ -856,6 +921,12 @@ export default function QuizInterface({ quizId, onComplete, onCancel }) {
         >
           <h2 className="text-3xl font-bold text-white mb-1">{selectedQuiz.title}</h2>
           <p className="text-slate-400">{selectedQuiz.category} | {currentQuestions.length} Questions</p>
+          {timeRemaining !== null && (
+            <div className={`mt-2 flex items-center gap-2 ${timeRemaining <= 300 ? 'text-red-400' : timeRemaining <= 600 ? 'text-orange-400' : 'text-green-400'}`}>
+              <Clock className="w-4 h-4" />
+              <span className="font-medium">Time Remaining: {formatTime(timeRemaining)}</span>
+            </div>
+          )}
         </motion.div>
         <div className="flex items-center gap-3">
           <button
