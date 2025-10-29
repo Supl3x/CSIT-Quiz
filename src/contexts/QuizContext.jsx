@@ -407,7 +407,25 @@ export function QuizProvider({ children }) {
       completedAt: new Date(),
       timeSpent: attempt.timeSpent || 0
     };
-    setAttempts((prev) => [...prev, newAttempt]);
+
+    // Update attempts atomically and trigger a re-render
+    const updateAttempts = (prev) => {
+      const newAttempts = [...prev, newAttempt];
+      // Save to localStorage immediately
+      saveToLocalStorage('csit-quiz-attempts', newAttempts);
+      return newAttempts;
+    };
+
+    setAttempts(updateAttempts);
+    
+    // Force a re-render of components using attempts
+    setTimeout(() => {
+      setAttempts(current => [...current]);
+    }, 0);
+    
+    // Add a notification
+    addNotification(`Quiz completed! Score: ${attempt.score}%`, 'success');
+    
     return newAttempt.id;
   };
 

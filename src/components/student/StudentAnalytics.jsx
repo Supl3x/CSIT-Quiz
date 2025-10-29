@@ -15,31 +15,56 @@ import {
 
 export default function StudentAnalytics() {
   const { user } = useAuth();
-  const { quizzes, getStudentAttempts } = useQuiz();
+  const { quizzes, getStudentAttempts, attempts } = useQuiz();
+  const [localAttempts, setLocalAttempts] = React.useState([]);
 
-  const studentAttempts = getStudentAttempts(user?.id || '');
+  // Update attempts when global attempts change
+  React.useEffect(() => {
+    setLocalAttempts(getStudentAttempts(user?.id || ''));
+  }, [user?.id, getStudentAttempts, attempts]);
   
+  // Get recent attempts first as it's used in multiple calculations
+  const recentAttempts = React.useMemo(() => [...localAttempts]
+    .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
+    .slice(0, 5), [localAttempts]);
+
   // Calculate comprehensive statistics
-  const totalAttempts = studentAttempts.length;
+  const totalAttempts = localAttempts.length;
   const averageScore = totalAttempts > 0 
-    ? Math.round(studentAttempts.reduce((sum, attempt) => sum + attempt.score, 0) / totalAttempts)
+    ? Math.round(localAttempts.reduce((sum, attempt) => sum + attempt.score, 0) / totalAttempts)
     : 0;
   const bestScore = totalAttempts > 0 
-    ? Math.max(...studentAttempts.map(attempt => attempt.score))
+    ? Math.max(...localAttempts.map(attempt => attempt.score))
     : 0;
-  const totalTimeSpent = studentAttempts.reduce((sum, attempt) => sum + attempt.timeSpent, 0);
+  const worstScore = totalAttempts > 0
+    ? Math.min(...localAttempts.map(attempt => attempt.score))
+    : 0;
+  const totalTimeSpent = localAttempts.reduce((sum, attempt) => sum + (attempt.timeSpent || 0), 0);
+
+  // Calculate improvement metrics
+  const improvementRate = totalAttempts >= 2 ? (() => {
+    const recentScores = recentAttempts.map(attempt => attempt.score);
+    if (recentScores.length >= 2) {
+      const averageRecent = recentScores.slice(0, 3).reduce((a, b) => a + b, 0) / Math.min(recentScores.length, 3);
+      const averageOld = recentScores.slice(-3).reduce((a, b) => a + b, 0) / Math.min(recentScores.length, 3);
+      return averageOld !== 0 ? Math.round(((averageRecent - averageOld) / averageOld) * 100) : 0;
+    }
+    return 0;
+  })() : 0;
 
   // Category-wise performance
-  const categoryPerformance = studentAttempts.reduce((acc, attempt) => {
-    Object.entries(attempt.categoryScores).forEach(([category, scores]) => {
-      if (!acc[category]) {
-        acc[category] = { correct: 0, total: 0, attempts: 0, totalScore: 0 };
-      }
-      acc[category].correct += scores.correct;
-      acc[category].total += scores.total;
-      acc[category].attempts++;
-      acc[category].totalScore += (scores.correct / scores.total) * 100;
-    });
+  const categoryPerformance = localAttempts.reduce((acc, attempt) => {
+    if (attempt.categoryScores) {
+      Object.entries(attempt.categoryScores).forEach(([category, scores]) => {
+        if (!acc[category]) {
+          acc[category] = { correct: 0, total: 0, attempts: 0, totalScore: 0 };
+        }
+        acc[category].correct += scores.correct;
+        acc[category].total += scores.total;
+        acc[category].attempts++;
+        acc[category].totalScore += (scores.correct / scores.total) * 100;
+      });
+    }
     return acc;
   }, {});
 
@@ -59,17 +84,12 @@ export default function StudentAnalytics() {
     .filter(([_, performance]) => performance.avgScore >= 80)
     .sort((b, a) => a[1].avgScore - b[1].avgScore);
 
-  // Recent performance trend
-  const recentAttempts = studentAttempts
-    .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
-    .slice(0, 5);
-
   const isImproving = recentAttempts.length >= 2 && 
     recentAttempts[0].score > recentAttempts[recentAttempts.length - 1].score;
 
   // Quiz completion rate
   const availableQuizzes = quizzes.filter(quiz => quiz.isActive).length;
-  const completedQuizzes = new Set(studentAttempts.map(attempt => attempt.quizId)).size;
+  const completedQuizzes = new Set(localAttempts.map(attempt => attempt.quizId)).size;
   const completionRate = availableQuizzes > 0 ? Math.round((completedQuizzes / availableQuizzes) * 100) : 0;
 
   return (
@@ -98,6 +118,98 @@ export default function StudentAnalytics() {
         <>
           {/* Performance Overview */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Quiz Completion Status */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-gray-500 dark:text-gray-400 text-sm font-medium">Completion Rate</h3>
+                <BookOpen className="w-5 h-5 text-blue-500" />
+              </div>
+              <div className="flex items-baseline">
+                <span className="text-2xl font-bold text-gray-900 dark:text-white">{completionRate}%</span>
+                <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">of quizzes completed</span>
+              </div>
+              <div className="mt-4 h-2 bg-gray-200 dark:bg-gray-700 rounded-full">
+                <div 
+                  className="h-2 bg-blue-500 rounded-full" 
+                  style={{ width: `${completionRate}%` }}
+                />
+              </div>
+              <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                {completedQuizzes} out of {availableQuizzes} quizzes
+              </div>
+            </div>
+
+            {/* Average Performance */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-gray-500 dark:text-gray-400 text-sm font-medium">Average Score</h3>
+                <Target className="w-5 h-5 text-green-500" />
+              </div>
+              <div className="flex items-baseline">
+                <span className="text-2xl font-bold text-gray-900 dark:text-white">{averageScore}%</span>
+                <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">overall performance</span>
+              </div>
+              <div className="mt-4 h-2 bg-gray-200 dark:bg-gray-700 rounded-full">
+                <div 
+                  className="h-2 bg-green-500 rounded-full" 
+                  style={{ width: `${averageScore}%` }}
+                />
+              </div>
+              <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                Based on {totalAttempts} quiz attempts
+              </div>
+            </div>
+
+            {/* Best Performance */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-gray-500 dark:text-gray-400 text-sm font-medium">Best Score</h3>
+                <Trophy className="w-5 h-5 text-yellow-500" />
+              </div>
+              <div className="flex items-baseline">
+                <span className="text-2xl font-bold text-gray-900 dark:text-white">{bestScore}%</span>
+                <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">highest achievement</span>
+              </div>
+              <div className="mt-4 h-2 bg-gray-200 dark:bg-gray-700 rounded-full">
+                <div 
+                  className="h-2 bg-yellow-500 rounded-full" 
+                  style={{ width: `${bestScore}%` }}
+                />
+              </div>
+              <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                Room for improvement: {100 - bestScore}%
+              </div>
+            </div>
+
+            {/* Improvement Rate */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-gray-500 dark:text-gray-400 text-sm font-medium">Progress Trend</h3>
+                <TrendingUp className={`w-5 h-5 ${improvementRate >= 0 ? 'text-emerald-500' : 'text-red-500'}`} />
+              </div>
+              <div className="flex items-baseline">
+                <span className={`text-2xl font-bold ${improvementRate >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                  {improvementRate >= 0 ? '+' : ''}{improvementRate}%
+                </span>
+                <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">improvement rate</span>
+              </div>
+              <div className="mt-4 flex space-x-1">
+                {recentAttempts.slice(0, 5).map((attempt, index) => (
+                  <div 
+                    key={index}
+                    className="flex-1 h-8 bg-gray-200 dark:bg-gray-700 rounded-md relative"
+                  >
+                    <div 
+                      className="absolute bottom-0 w-full bg-cyan-500 rounded-md transition-all duration-300"
+                      style={{ height: `${attempt.score}%` }}
+                    />
+                  </div>
+                ))}
+              </div>
+              <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                Based on recent {recentAttempts.length} attempts
+              </div>
+            </div>
             <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
               <div className="flex items-center justify-between">
                 <div>
@@ -337,6 +449,105 @@ export default function StudentAnalytics() {
                 </p>
                 <p className="text-sm text-gray-600 dark:text-gray-300">Quizzes Completed</p>
               </div>
+            </div>
+          </div>
+
+          {/* Category Performance */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+            {/* Strong Areas */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Strong Areas</h3>
+                <Award className="w-5 h-5 text-emerald-500" />
+              </div>
+              <div className="space-y-4">
+                {strongAreas.map(([category, performance]) => (
+                  <div key={category}>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-gray-600 dark:text-gray-300">{category}</span>
+                      <span className="text-emerald-500 font-medium">{Math.round(performance.avgScore)}%</span>
+                    </div>
+                    <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full">
+                      <div 
+                        className="h-2 bg-emerald-500 rounded-full"
+                        style={{ width: `${performance.avgScore}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+                {strongAreas.length === 0 && (
+                  <div className="text-center text-gray-500 dark:text-gray-400 py-4">
+                    Keep practicing to develop strong areas!
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Areas for Improvement */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Areas for Improvement</h3>
+                <AlertCircle className="w-5 h-5 text-amber-500" />
+              </div>
+              <div className="space-y-4">
+                {weakAreas.map(([category, performance]) => (
+                  <div key={category}>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-gray-600 dark:text-gray-300">{category}</span>
+                      <span className="text-amber-500 font-medium">{Math.round(performance.avgScore)}%</span>
+                    </div>
+                    <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full">
+                      <div 
+                        className="h-2 bg-amber-500 rounded-full"
+                        style={{ width: `${performance.avgScore}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+                {weakAreas.length === 0 && (
+                  <div className="text-center text-gray-500 dark:text-gray-400 py-4">
+                    Great job! Keep maintaining your performance!
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Recent Activity Timeline */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 mt-8">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Activity</h3>
+              <Clock className="w-5 h-5 text-blue-500" />
+            </div>
+            <div className="space-y-6">
+              {recentAttempts.map((attempt, index) => {
+                const date = new Date(attempt.completedAt);
+                return (
+                  <div key={index} className="flex items-start">
+                    <div className={`relative flex items-center justify-center flex-shrink-0 w-8 h-8 rounded-full mr-4 ${
+                      attempt.score >= 80 ? 'bg-emerald-100 text-emerald-500' :
+                      attempt.score >= 60 ? 'bg-blue-100 text-blue-500' :
+                      'bg-amber-100 text-amber-500'
+                    }`}>
+                      {attempt.score >= 80 ? '🌟' : attempt.score >= 60 ? '✓' : '!'}
+                      <div className="absolute top-10 w-px h-full bg-gray-300 dark:bg-gray-600" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-gray-900 dark:text-white font-medium">
+                          {quizzes.find(q => q.id === attempt.quizId)?.title || 'Quiz'}
+                        </h4>
+                        <span className="text-sm text-gray-500 dark:text-gray-400">
+                          {date.toLocaleDateString()} at {date.toLocaleTimeString()}
+                        </span>
+                      </div>
+                      <p className="text-gray-600 dark:text-gray-300 mt-1">
+                        Score: {attempt.score}% • Time: {Math.round(attempt.timeSpent / 60)} minutes
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </>

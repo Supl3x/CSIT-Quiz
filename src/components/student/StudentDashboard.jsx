@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { useQuiz } from '../../contexts/QuizContext.jsx';
 import { 
@@ -20,8 +20,13 @@ export default function StudentDashboard() {
   const { quizzes, attempts, getStudentAttempts } = useQuiz();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedQuiz, setSelectedQuiz] = useState(null);
+  const [studentAttempts, setStudentAttempts] = useState([]);
 
-  const studentAttempts = getStudentAttempts(user?.id || '');
+  // Update student attempts when attempts or user changes
+  useEffect(() => {
+    setStudentAttempts(getStudentAttempts(user?.id || ''));
+  }, [user?.id, getStudentAttempts, attempts]);
+
   const activeQuizzes = quizzes.filter(quiz => quiz.isActive);
   
   // Calculate student statistics

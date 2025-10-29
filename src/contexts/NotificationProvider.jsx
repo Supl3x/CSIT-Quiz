@@ -51,7 +51,7 @@ export function NotificationProvider({ children }) {
               }`}
             >
               <Bell className="w-5 h-5" />
-              <p>{notification.message}</p>
+              <div>{typeof notification.message === 'object' ? JSON.stringify(notification.message) : notification.message}</div>
               <button
                 onClick={() => removeNotification(notification.id)}
                 className="ml-auto text-white/80 hover:text-white"
