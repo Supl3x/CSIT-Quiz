@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { useTheme } from '../../contexts/ThemeContext.jsx';
@@ -17,12 +17,14 @@ import {
 } from 'lucide-react';
 import GlassCard from './GlassCard.jsx';
 import AnimatedButton from './AnimatedButton.jsx';
+import Portal from './Portal.jsx';
 
 export default function Header() {
   const { user, logout } = useAuth();
   const { isDarkMode, toggleDarkMode } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const notificationButtonRef = useRef(null);
 
   const notifications = [
     { id: 1, text: "New quiz available: Advanced Programming", time: "2 min ago", unread: true },
@@ -34,41 +36,30 @@ export default function Header() {
 
   return (
     <motion.header 
-      className="relative bg-gradient-to-r from-blue-900/90 via-purple-900/90 to-indigo-900/90 backdrop-blur-xl shadow-2xl border-b border-white/10"
+      className="relative bg-gradient-to-r from-blue-900/90 via-purple-900/90 to-indigo-900/90 backdrop-blur-xl shadow-2xl border-b border-white/10 overflow-visible"
       initial={{ y: -100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.6, type: "spring", stiffness: 100 }}
     >
-      {/* Animated background elements */}
+      {/* Animated background elements - Reduced for performance */}
       <div className="absolute inset-0 overflow-hidden">
         <motion.div
-          className="absolute -top-4 -right-4 w-24 h-24 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full"
+          className="absolute -top-4 -right-4 w-24 h-24 bg-gradient-to-br from-blue-500/15 to-purple-500/15 rounded-full"
           animate={{
-            scale: [1, 1.2, 1],
+            scale: [1, 1.1, 1],
             rotate: [0, 180, 360],
           }}
           transition={{
-            duration: 10,
+            duration: 15, // Slower for better performance
             repeat: Infinity,
             ease: "linear"
           }}
         />
-        <motion.div
-          className="absolute -bottom-4 -left-4 w-32 h-32 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-full"
-          animate={{
-            scale: [1.2, 1, 1.2],
-            rotate: [360, 180, 0],
-          }}
-          transition={{
-            duration: 15,
-            repeat: Infinity,
-            ease: "linear"
-          }}
-        />
+        {/* Removed second animated background element for performance */}
       </div>
 
-      <div className="container mx-auto px-4 relative z-10">
-        <div className="flex items-center justify-between h-20">
+      <div className="container mx-auto px-4 relative z-10 overflow-visible">
+        <div className="flex items-center justify-between h-20 overflow-visible">
           {/* Logo */}
           <motion.div 
             className="flex items-center space-x-4"
@@ -83,17 +74,13 @@ export default function Header() {
               animate={{
                 boxShadow: [
                   "0 0 20px rgba(59, 130, 246, 0.3)",
-                  "0 0 30px rgba(147, 51, 234, 0.4)",
+                  "0 0 25px rgba(147, 51, 234, 0.4)",
                   "0 0 20px rgba(59, 130, 246, 0.3)"
                 ]
               }}
-              transition={{ duration: 2, repeat: Infinity }}
+              transition={{ duration: 3, repeat: Infinity }} // Slower glow effect
             >
-              <motion.div
-                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-                animate={{ x: ['-100%', '100%'] }}
-                transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-              />
+              {/* Removed inner shimmer animation for performance */}
               <GraduationCap className="w-8 h-8 text-white relative z-10" />
             </motion.div>
             <div>
@@ -139,6 +126,7 @@ export default function Header() {
               transition={{ delay: 0.3 }}
             >
               <motion.button
+                ref={notificationButtonRef}
                 onClick={() => setShowNotifications(!showNotifications)}
                 className="relative p-3 text-white/80 hover:text-white bg-white/10 backdrop-blur-xl rounded-xl hover:bg-white/20 transition-all border border-white/20"
                 whileHover={{ scale: 1.1 }}
@@ -159,32 +147,50 @@ export default function Header() {
 
               <AnimatePresence>
                 {showNotifications && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    className="absolute right-0 top-full mt-2 w-80 z-50"
-                  >
-                    <GlassCard className="p-4">
-                      <h3 className="text-white font-semibold mb-3">Notifications</h3>
-                      <div className="space-y-2">
-                        {notifications.map((notification) => (
-                          <motion.div
-                            key={notification.id}
-                            className={`p-3 rounded-lg ${
-                              notification.unread 
-                                ? 'bg-blue-500/20 border border-blue-500/30' 
-                                : 'bg-white/5 border border-white/10'
-                            }`}
-                            whileHover={{ scale: 1.02 }}
-                          >
-                            <p className="text-white text-sm">{notification.text}</p>
-                            <p className="text-white/60 text-xs mt-1">{notification.time}</p>
-                          </motion.div>
-                        ))}
-                      </div>
-                    </GlassCard>
-                  </motion.div>
+                  <Portal>
+                    {/* Backdrop */}
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="fixed inset-0 bg-black/20 backdrop-blur-sm"
+                      style={{ zIndex: 999998 }}
+                      onClick={() => setShowNotifications(false)}
+                    />
+                    {/* Notification dropdown */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      className="fixed w-80"
+                      style={{ 
+                        zIndex: 999999,
+                        top: notificationButtonRef.current ? notificationButtonRef.current.getBoundingClientRect().bottom + 8 : '5rem',
+                        right: '1rem',
+                        maxHeight: 'calc(100vh - 6rem)'
+                      }}
+                    >
+                      <GlassCard className="p-4 shadow-2xl border border-white/20">
+                        <h3 className="text-white font-semibold mb-3">Notifications</h3>
+                        <div className="space-y-2 max-h-80 overflow-y-auto">
+                          {notifications.map((notification) => (
+                            <motion.div
+                              key={notification.id}
+                              className={`p-3 rounded-lg ${
+                                notification.unread 
+                                  ? 'bg-blue-500/20 border border-blue-500/30' 
+                                  : 'bg-white/5 border border-white/10'
+                              }`}
+                              whileHover={{ scale: 1.02 }}
+                            >
+                              <p className="text-white text-sm">{notification.text}</p>
+                              <p className="text-white/60 text-xs mt-1">{notification.time}</p>
+                            </motion.div>
+                          ))}
+                        </div>
+                      </GlassCard>
+                    </motion.div>
+                  </Portal>
                 )}
               </AnimatePresence>
             </motion.div>

@@ -358,7 +358,7 @@ export default function StudentQuizInterface({ quizId, onComplete, onCancel }) {
     quiz.isActive && quiz.questions && quiz.questions.length > 0
   );
 
-  // Select quiz based on quizId prop; fallback to first active quiz
+  // Select quiz based on quizId prop; fallback to quiz selection
   useEffect(() => {
     if (quizId) {
       const q = getQuizWithQuestions(quizId);
@@ -369,18 +369,15 @@ export default function StudentQuizInterface({ quizId, onComplete, onCancel }) {
           const shuffled = shuffleQuestionsForStudent(q.questions, user.id, q.id);
           setShuffledQuestions(shuffled);
         }
-      }
-    } else if (!selectedQuiz && activeQuizzes.length > 0) {
-      const firstQuiz = activeQuizzes[0];
-      setSelectedQuiz(firstQuiz);
-      // Shuffle questions for this specific student
-      if (user && firstQuiz.questions) {
-        const shuffled = shuffleQuestionsForStudent(firstQuiz.questions, user.id, firstQuiz.id);
-        setShuffledQuestions(shuffled);
+        // Reset quiz state when starting a new quiz
+        setCurrentQuestionIndex(0);
+        setUserAnswers({});
+        setQuizCompleted(false);
+        setScore(null);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [quizId, quizzes, user]);
+    // If no quizId provided, let user select from available quizzes
+  }, [quizId, user]);
 
   // Get questions from the shuffled quiz questions
   const currentQuestions = shuffledQuestions.length > 0 ? shuffledQuestions : [];
@@ -511,11 +508,18 @@ export default function StudentQuizInterface({ quizId, onComplete, onCancel }) {
   };
 
   const handleSelectDifferentQuiz = () => {
+    // Reset internal state
     setSelectedQuiz(null);
     setCurrentQuestionIndex(0);
     setUserAnswers({});
     setQuizCompleted(false);
     setScore(null);
+    setShuffledQuestions([]);
+    
+    // Call parent callback to return to quiz selection
+    if (onCancel) {
+      onCancel();
+    }
   };
   
   const handleSelectQuiz = (quiz) => {
@@ -524,6 +528,12 @@ export default function StudentQuizInterface({ quizId, onComplete, onCancel }) {
     setUserAnswers({});
     setQuizCompleted(false);
     setScore(null);
+    
+    // Shuffle questions for this specific student
+    if (user && quiz.questions) {
+      const shuffled = shuffleQuestionsForStudent(quiz.questions, user.id, quiz.id);
+      setShuffledQuestions(shuffled);
+    }
   };
 
   // Reset data function
@@ -617,13 +627,6 @@ export default function StudentQuizInterface({ quizId, onComplete, onCancel }) {
             </h2>
             <p className="text-slate-400 mt-1">Test your knowledge with interactive questions</p>
           </div>
-          <button
-            onClick={handleResetData}
-            className="flex items-center gap-2 bg-gradient-to-r from-cyan-600 to-blue-600 text-white px-6 py-3 rounded-xl font-medium shadow-lg hover:shadow-cyan-500/50 transition-all"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Load Sample Quizzes
-          </button>
         </motion.div>
 
         <motion.div
@@ -655,13 +658,6 @@ export default function StudentQuizInterface({ quizId, onComplete, onCancel }) {
             </h2>
             <p className="text-slate-400 mt-1">Select a quiz to begin your practice session.</p>
           </div>
-          <button
-            onClick={handleResetData}
-            className="flex items-center gap-2 bg-slate-700/50 text-slate-300 px-4 py-2 rounded-xl text-sm font-medium hover:bg-slate-600/50 transition-all"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Reset Sample Data
-          </button>
         </motion.div>
 
         <motion.div

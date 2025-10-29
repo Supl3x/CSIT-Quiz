@@ -25,52 +25,26 @@ export default function AnimatedBackground({ children, variant = 'default' }) {
       transition={{ duration: 1 }}
       style={variants[variant]}
     >
-      {/* Animated geometric shapes */}
+      {/* Optimized animated geometric shapes */}
       <div className="absolute inset-0 overflow-hidden">
         <motion.div
-          className="absolute -top-40 -right-40 w-80 h-80 bg-white bg-opacity-10 rounded-full"
+          className="absolute -top-40 -right-40 w-80 h-80 bg-white bg-opacity-8 rounded-full"
           animate={{
-            scale: [1, 1.2, 1],
+            scale: [1, 1.1, 1],
             rotate: [0, 180, 360],
           }}
           transition={{
-            duration: 20,
+            duration: 30, // Much slower for better performance
             repeat: Infinity,
             ease: "linear"
           }}
         />
-        <motion.div
-          className="absolute -bottom-40 -left-40 w-96 h-96 bg-white bg-opacity-5 rounded-full"
-          animate={{
-            scale: [1.2, 1, 1.2],
-            rotate: [360, 180, 0],
-          }}
-          transition={{
-            duration: 25,
-            repeat: Infinity,
-            ease: "linear"
-          }}
-        />
-        <motion.div
-          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-white bg-opacity-5"
-          animate={{
-            rotate: [0, 90, 180, 270, 360],
-            scale: [1, 1.1, 1],
-          }}
-          transition={{
-            duration: 30,
-            repeat: Infinity,
-            ease: "linear"
-          }}
-          style={{
-            clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)'
-          }}
-        />
+        {/* Removed additional animations for performance */}
       </div>
       
-      {/* Floating particles */}
+      {/* Reduced floating particles for performance */}
       <div className="absolute inset-0">
-        {[...Array(20)].map((_, i) => (
+        {[...Array(8)].map((_, i) => (
           <motion.div
             key={i}
             className="absolute w-2 h-2 bg-white bg-opacity-30 rounded-full"
@@ -83,7 +57,7 @@ export default function AnimatedBackground({ children, variant = 'default' }) {
               opacity: [0.3, 0.8, 0.3],
             }}
             transition={{
-              duration: 3 + Math.random() * 2,
+              duration: 5 + Math.random() * 3, // Slower and more varied for performance
               repeat: Infinity,
               delay: Math.random() * 2,
             }}

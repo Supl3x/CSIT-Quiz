@@ -1,12 +1,18 @@
 import React, { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '../../contexts/ThemeContext.jsx';
+import { getOptimalParticleCount, shouldReduceAnimations } from '../../utils/performanceUtils.js';
 
 export default function EnhancedBackground({ children, variant = 'default' }) {
   const canvasRef = useRef(null);
   const { isDarkMode } = useTheme();
 
   useEffect(() => {
+    // Skip animations if performance is poor or user prefers reduced motion
+    if (shouldReduceAnimations()) {
+      return;
+    }
+
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -15,14 +21,14 @@ export default function EnhancedBackground({ children, variant = 'default' }) {
     canvas.height = window.innerHeight;
 
     const particles = [];
-    const particleCount = 50;
+    const particleCount = getOptimalParticleCount(); // Dynamic particle count based on device
 
     class Particle {
       constructor() {
         this.x = Math.random() * canvas.width;
         this.y = Math.random() * canvas.height;
-        this.vx = (Math.random() - 0.5) * 0.5;
-        this.vy = (Math.random() - 0.5) * 0.5;
+        this.vx = (Math.random() - 0.5) * 0.3; // Slightly slower movement
+        this.vy = (Math.random() - 0.5) * 0.3;
         this.radius = Math.random() * 2 + 1;
         this.opacity = Math.random() * 0.5 + 0.2;
       }
@@ -50,16 +56,17 @@ export default function EnhancedBackground({ children, variant = 'default' }) {
 
     function connectParticles() {
       for (let i = 0; i < particles.length; i++) {
-        for (let j = i + 1; j < particles.length; j++) {
+        // Optimize: only check every other particle to reduce calculations
+        for (let j = i + 2; j < particles.length; j += 2) {
           const dx = particles[i].x - particles[j].x;
           const dy = particles[i].y - particles[j].y;
           const distance = Math.sqrt(dx * dx + dy * dy);
 
-          if (distance < 120) {
+          if (distance < 100) { // Reduced connection distance for better performance
             ctx.beginPath();
             const lineColor = isDarkMode 
-              ? `rgba(255, 255, 255, ${0.1 * (1 - distance / 120)})`
-              : `rgba(0, 0, 0, ${0.05 * (1 - distance / 120)})`;
+              ? `rgba(255, 255, 255, ${0.15 * (1 - distance / 100)})`
+              : `rgba(0, 0, 0, ${0.08 * (1 - distance / 100)})`;
             ctx.strokeStyle = lineColor;
             ctx.lineWidth = 1;
             ctx.moveTo(particles[i].x, particles[i].y);
@@ -70,15 +77,23 @@ export default function EnhancedBackground({ children, variant = 'default' }) {
       }
     }
 
-    function animate() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let lastTime = 0;
+    const targetFPS = 60;
+    const frameInterval = 1000 / targetFPS;
 
-      particles.forEach(particle => {
-        particle.update();
-        particle.draw();
-      });
+    function animate(currentTime = 0) {
+      // Frame rate limiting for better performance
+      if (currentTime - lastTime >= frameInterval) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      connectParticles();
+        particles.forEach(particle => {
+          particle.update();
+          particle.draw();
+        });
+
+        connectParticles();
+        lastTime = currentTime;
+      }
       requestAnimationFrame(animate);
     }
 
