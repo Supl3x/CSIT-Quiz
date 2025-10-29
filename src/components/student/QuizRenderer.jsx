@@ -1,12 +1,12 @@
 import React from "react";
 import DragDropQuestion from "./DragDropQuestion";
-import FlowchartQuestion from "./FlowchartQuestion"; // Create this component
+import FlowchartQuestion from "./FlowchartQuestion";
 import CodeArrangementQuestion from "./CodeArrangementQuestion";
 
 export default function QuizRenderer({ question, userAnswer, onAnswerChange }) {
   if (!question) return null;
 
-  if (question.type === "mcq") {
+  if (question.type === "multiple-choice") {
     return (
       <div>
         <p className="font-semibold mb-2">{question.text}</p>
@@ -26,7 +26,7 @@ export default function QuizRenderer({ question, userAnswer, onAnswerChange }) {
     );
   }
 
-  if (question.type === "dragdrop") {
+  if (question.type === "drag-drop") {
     return (
       <DragDropQuestion
         question={question}
@@ -36,7 +36,39 @@ export default function QuizRenderer({ question, userAnswer, onAnswerChange }) {
     );
   }
 
-  if (question.type === "codearrangement") {
+
+
+  if (question.type === "true-false") {
+    return (
+      <div>
+        <p className="font-semibold mb-2">{question.text}</p>
+        <div className="flex gap-4">
+          <div className="flex gap-2 items-center">
+            <input
+              type="radio"
+              name={question.id}
+              value="true"
+              checked={userAnswer === true}
+              onChange={() => onAnswerChange(true)}
+            />
+            <label>True</label>
+          </div>
+          <div className="flex gap-2 items-center">
+            <input
+              type="radio"
+              name={question.id}
+              value="false"
+              checked={userAnswer === false}
+              onChange={() => onAnswerChange(false)}
+            />
+            <label>False</label>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (question.type === "code-arrangement") {
     return (
       <CodeArrangementQuestion
         question={question}

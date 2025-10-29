@@ -39,7 +39,7 @@ function DroppableArea({ id, dropped, label }) {
           <span className="text-sm opacity-70">✓</span>
         </div>
       ) : (
-        <span className="opacity-70">Drop {label} here</span>
+        <span className="opacity-70">{label}</span>
       )}
     </div>
   );
@@ -48,18 +48,26 @@ function DroppableArea({ id, dropped, label }) {
 export default function DragDropQuestion({ question, onAnswer, userAnswer }) {
   const [answers, setAnswers] = useState(userAnswer || {});
   
-  const handleDrop = (event) => {
+  const handleDragEnd = (event) => {
     const { active, over } = event;
-    if (!over) return;
     
-    const newAnswers = { 
-      ...answers, 
-      [over.id]: active.id 
-    };
-    
-    setAnswers(newAnswers);
-    onAnswer(newAnswers);
+    if (over) {
+      const newAnswers = { ...answers };
+      // Remove the item from its previous position if it exists
+      Object.keys(newAnswers).forEach(key => {
+        if (newAnswers[key] === active.id) {
+          delete newAnswers[key];
+        }
+      });
+      // Add to new position
+      newAnswers[over.id] = active.id;
+      setAnswers(newAnswers);
+      onAnswer(newAnswers);
+    }
   };
+
+  const items = question.dragDropData?.items || [];
+  const targets = question.dragDropData?.targets || [];
 
   const resetAnswers = () => {
     setAnswers({});
@@ -68,55 +76,48 @@ export default function DragDropQuestion({ question, onAnswer, userAnswer }) {
 
   // If question uses the new dragDropData structure
   if (question.dragDropData) {
-    return (
-      <div className="space-y-6">
-        <div className="text-slate-400 bg-slate-800/50 p-4 rounded-xl border border-slate-700/30">
-          <p className="font-medium mb-2">Instructions:</p>
-          <p>{question.dragDropData?.instruction || 'Drag items to their correct positions'}</p>
-        </div>
-
-        <DndContext onDragEnd={handleDrop}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Draggable Items */}
-            <div className="space-y-3">
-              <h4 className="text-cyan-400 font-medium mb-3">Items:</h4>
-              {question.dragDropData.items.map((item, index) => (
-                <DraggableOption 
-                  key={index} 
-                  id={item} 
-                  label={item} 
-                />
-              ))}
-            </div>
-
-            {/* Drop Targets */}
-            <div className="space-y-3">
-              <h4 className="text-cyan-400 font-medium mb-3">Targets:</h4>
-              {question.dragDropData.targets.map((target, index) => (
-                <div key={index} className="space-y-2">
-                  <span className="text-slate-400 text-sm">{target}:</span>
-                  <DroppableArea 
-                    id={target} 
-                    dropped={answers[target]} 
-                    label={target}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-        </DndContext>
-
-        <div className="flex justify-center">
-          <button
-            onClick={resetAnswers}
-            className="px-4 py-2 bg-slate-700/50 text-slate-300 rounded-lg hover:bg-slate-600/50 transition-colors"
-          >
-            Reset Answers
-          </button>
-        </div>
+  return (
+    <div className="space-y-6">
+      <div className="text-slate-400 bg-slate-800/50 p-4 rounded-xl border border-slate-700/30">
+        <p className="font-medium mb-2">Instructions:</p>
+        <p>{question.dragDropData?.instruction || 'Drag items to their correct positions'}</p>
       </div>
-    );
-  }
+
+      <DndContext onDragEnd={handleDragEnd}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Draggable Items */}
+          <div className="space-y-3">
+            <h4 className="text-cyan-400 font-medium mb-3">Items:</h4>
+            {question.dragDropData?.items?.map((item, index) => (
+              <DraggableOption key={index} id={item} label={item} />
+            ))}
+          </div>
+
+          {/* Drop Targets */}
+          <div className="space-y-3">
+            <h4 className="text-cyan-400 font-medium mb-3">Targets:</h4>
+            {question.dragDropData?.targets?.map((target, index) => (
+              <div key={index} className="space-y-2">
+                <span className="text-slate-400 text-sm">{target}:</span>
+                <DroppableArea id={target} dropped={answers[target]} label={target} />
+              </div>
+            ))}
+          </div>
+        </div>
+      </DndContext>
+
+      <div className="flex justify-center">
+        <button
+          onClick={resetAnswers}
+          className="px-4 py-2 bg-slate-700/50 text-slate-300 rounded-lg hover:bg-slate-600/50 transition-colors"
+        >
+          Reset Answers
+        </button>
+      </div>
+    </div>
+  );
+}
+
 
   // If question uses the old pairs structure
   return (
@@ -126,7 +127,7 @@ export default function DragDropQuestion({ question, onAnswer, userAnswer }) {
         <p>Drag the items from the right to match with their correct pairs on the left</p>
       </div>
 
-      <DndContext onDragEnd={handleDrop}>
+      <DndContext onDragEnd={handleDragEnd}>
         <div className="space-y-4">
           {question.pairs.map((pair, idx) => (
             <motion.div 

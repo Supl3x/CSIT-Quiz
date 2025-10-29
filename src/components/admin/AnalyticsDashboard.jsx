@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 
 export default function AnalyticsDashboard() {
+  // ✅ Safe destructuring to prevent undefined errors
   const { questions = [], quizzes = [], attempts = [] } = useQuiz();
 
   // Calculate overall statistics
@@ -37,17 +38,18 @@ export default function AnalyticsDashboard() {
 
   // Calculate category-wise performance from attempts
   attempts.forEach(attempt => {
-    if (attempt.categoryScores && typeof attempt.categoryScores === 'object') {
-      Object.entries(attempt.categoryScores).forEach(([category, scores]) => {
-        if (categoryStats[category] && scores && typeof scores === 'object' && 
-            typeof scores.correct === 'number' && typeof scores.total === 'number' && scores.total > 0) {
-          categoryStats[category].attempts++;
-          const categoryScore = (scores.correct / scores.total) * 100;
-          categoryStats[category].totalScore += categoryScore;
-          categoryStats[category].avgScore = categoryStats[category].totalScore / categoryStats[category].attempts;
-        }
-      });
-    }
+    // ✅ Skip if categoryScores missing or invalid
+    if (!attempt || !attempt.categoryScores || typeof attempt.categoryScores !== 'object') return;
+
+    Object.entries(attempt.categoryScores).forEach(([category, scores]) => {
+      if (categoryStats[category] && scores && typeof scores === 'object' && 
+          typeof scores.correct === 'number' && typeof scores.total === 'number' && scores.total > 0) {
+        categoryStats[category].attempts++;
+        const categoryScore = (scores.correct / scores.total) * 100;
+        categoryStats[category].totalScore += categoryScore;
+        categoryStats[category].avgScore = categoryStats[category].totalScore / categoryStats[category].attempts;
+      }
+    });
   });
 
   // Difficulty distribution
@@ -295,6 +297,7 @@ export default function AnalyticsDashboard() {
         ) : (
           <div className="space-y-4">
             {attempts
+              .filter(a => !!a.completedAt)
               .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
               .slice(0, 10)
               .map((attempt) => {
