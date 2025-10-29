@@ -98,17 +98,16 @@ function QuestionItem({ question, onAnswer, userAnswer, questionNumber, totalQue
       
       case 'drag-drop':
         if (question.dragDropData && question.dragDropData.items && question.dragDropData.targets) {
-          const correctOrder = question.dragDropData.correctOrder || [];
           const simpleCorrectOrderMapping = Object.fromEntries(
             question.dragDropData.items.map((item, index) => [
-              item,
-              question.dragDropData.targets[index]
+              question.dragDropData.targets[index], // target as key
+              item  // item as value
             ])
           );
 
           if (Object.keys(userAnswer || {}).length === question.dragDropData.items.length) {
-            return question.dragDropData.items.every(
-              (item) => userAnswer[item] === simpleCorrectOrderMapping[item]
+            return question.dragDropData.targets.every(
+              (target) => userAnswer[target] === simpleCorrectOrderMapping[target]
             );
           }
         }
@@ -444,14 +443,14 @@ export default function QuizInterface({ quizId, onComplete, onCancel }) {
             if (question.dragDropData) {
               const simpleCorrectOrderMapping = Object.fromEntries(
                 question.dragDropData.items.map((item, index) => [
-                  item, 
-                  question.dragDropData.targets[index]
+                  question.dragDropData.targets[index], // target as key
+                  item  // item as value
                 ])
               );
 
               if (Object.keys(userAnswer).length === question.dragDropData.items.length) {
-                isCorrect = question.dragDropData.items.every(item => 
-                  userAnswer[item] === simpleCorrectOrderMapping[item]
+                isCorrect = question.dragDropData.targets.every(target => 
+                  userAnswer[target] === simpleCorrectOrderMapping[target]
                 );
               } else {
                 isCorrect = false;
@@ -607,8 +606,8 @@ export default function QuizInterface({ quizId, onComplete, onCancel }) {
                       if (question.dragDropData) {
                         const correctOrderMapping = Object.fromEntries(
                           question.dragDropData.items.map((item, i) => [
-                            item,
-                            question.dragDropData.targets[i]
+                            question.dragDropData.targets[i], // target as key
+                            item  // item as value
                           ])
                         );
                         return Object.keys(userAnswer || {}).every(
@@ -695,13 +694,17 @@ export default function QuizInterface({ quizId, onComplete, onCancel }) {
                               <div className={`space-y-2 ${
                                 isCorrect ? 'text-green-300' : 'text-red-300'
                               }`}>
-                                {question.dragDropData?.items.map((item, i) => (
-                                  <div key={i} className="flex items-center gap-2">
-                                    <span>{item}</span>
-                                    <span>→</span>
-                                    <span>{userAnswer?.[item] || 'Not matched'}</span>
-                                  </div>
-                                ))}
+                                {question.dragDropData?.items.map((item, i) => {
+                                  // Find which target this item was matched to
+                                  const matchedTarget = Object.keys(userAnswer || {}).find(target => userAnswer[target] === item);
+                                  return (
+                                    <div key={i} className="flex items-center gap-2">
+                                      <span>{item}</span>
+                                      <span>→</span>
+                                      <span>{matchedTarget || 'Not matched'}</span>
+                                    </div>
+                                  );
+                                })}
                               </div>
                               {!isCorrect && (
                                 <>
