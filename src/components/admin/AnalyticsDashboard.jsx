@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 
 export default function AnalyticsDashboard() {
-  const { questions, quizzes, attempts } = useQuiz();
+  const { questions = [], quizzes = [], attempts = [] } = useQuiz();
 
   // Calculate overall statistics
   const totalQuestions = questions.length;
@@ -22,47 +22,53 @@ export default function AnalyticsDashboard() {
 
   // Category-wise statistics
   const categoryStats = questions.reduce((acc, question) => {
-    if (!acc[question.category]) {
-      acc[question.category] = {
+    const category = question.category || 'Uncategorized';
+    if (!acc[category]) {
+      acc[category] = {
         questions: 0,
         attempts: 0,
         totalScore: 0,
         avgScore: 0
       };
     }
-    acc[question.category].questions++;
+    acc[category].questions++;
     return acc;
   }, {});
 
   // Calculate category-wise performance from attempts
   attempts.forEach(attempt => {
-    Object.entries(attempt.categoryScores).forEach(([category, scores]) => {
-      if (categoryStats[category]) {
-        categoryStats[category].attempts++;
-        const categoryScore = (scores.correct / scores.total) * 100;
-        categoryStats[category].totalScore += categoryScore;
-        categoryStats[category].avgScore = categoryStats[category].totalScore / categoryStats[category].attempts;
-      }
-    });
+    if (attempt.categoryScores && typeof attempt.categoryScores === 'object') {
+      Object.entries(attempt.categoryScores).forEach(([category, scores]) => {
+        if (categoryStats[category] && scores && typeof scores === 'object' && 
+            typeof scores.correct === 'number' && typeof scores.total === 'number' && scores.total > 0) {
+          categoryStats[category].attempts++;
+          const categoryScore = (scores.correct / scores.total) * 100;
+          categoryStats[category].totalScore += categoryScore;
+          categoryStats[category].avgScore = categoryStats[category].totalScore / categoryStats[category].attempts;
+        }
+      });
+    }
   });
 
   // Difficulty distribution
   const difficultyStats = questions.reduce((acc, question) => {
-    acc[question.difficulty] = (acc[question.difficulty] || 0) + 1;
+    const difficulty = question.difficulty || 'Unknown';
+    acc[difficulty] = (acc[difficulty] || 0) + 1;
     return acc;
   }, {});
 
   // Performance metrics
   const averageScore = attempts.length > 0 
-    ? Math.round(attempts.reduce((sum, attempt) => sum + attempt.score, 0) / attempts.length)
+    ? Math.round(attempts.reduce((sum, attempt) => sum + (attempt.score || 0), 0) / attempts.length)
     : 0;
 
-  const highestScore = attempts.length > 0 
-    ? Math.max(...attempts.map(attempt => attempt.score))
+  const validScores = attempts.filter(attempt => typeof attempt.score === 'number').map(attempt => attempt.score);
+  const highestScore = validScores.length > 0 
+    ? Math.max(...validScores)
     : 0;
 
-  const lowestScore = attempts.length > 0 
-    ? Math.min(...attempts.map(attempt => attempt.score))
+  const lowestScore = validScores.length > 0 
+    ? Math.min(...validScores)
     : 0;
 
   // Weak areas identification
