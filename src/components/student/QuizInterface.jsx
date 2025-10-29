@@ -6,8 +6,6 @@ import { useNotification } from '../../contexts/useNotification.js';
 import { shuffleQuestionsForStudent, shuffleOptionsForStudent, mapAnswerToOriginal, mapOriginalToShuffled } from '../../utils/shuffleUtils.js';
 import { 
   Sparkles,
-  Eye, 
-  EyeOff,
   ListOrdered,
   Move,
   Type,
@@ -37,7 +35,6 @@ const QUESTION_TYPES = {
 };
 
 function QuestionItem({ question, onAnswer, userAnswer, questionNumber, totalQuestions, onNext, onPrevious, onSubmit, currentIndex, isLastQuestion, studentId }) {
-  const [showPreview, setShowPreview] = useState(false);
   const [selectedOption, setSelectedOption] = useState(userAnswer || null);
   const [shuffledOptions, setShuffledOptions] = useState([]);
   const [optionMapping, setOptionMapping] = useState([]);
@@ -253,13 +250,6 @@ function QuestionItem({ question, onAnswer, userAnswer, questionNumber, totalQue
             {question.text}
           </h3>
         </div>
-
-        <button
-          onClick={() => setShowPreview(!showPreview)}
-          className="p-2 text-slate-400 hover:text-cyan-400 transition-colors flex-shrink-0"
-        >
-          {showPreview ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-        </button>
       </div>
 
       {/* Question Input Area */}
@@ -321,32 +311,6 @@ function QuestionItem({ question, onAnswer, userAnswer, questionNumber, totalQue
           {question.difficulty}
         </span>
       </div>
-
-      {/* Preview (if enabled) */}
-      <AnimatePresence>
-        {showPreview && question.explanation && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="mt-4 p-4 bg-slate-800/50 rounded-xl border border-slate-700/30"
-          >
-            <h4 className="text-cyan-400 font-medium mb-2">Explanation:</h4>
-            <p className="text-slate-300 text-sm">{question.explanation}</p>
-            {(question.type === 'multiple-choice' || question.type === 'true-false') && (
-              <p className="text-sm mt-2 font-semibold">
-                Correct Answer: 
-                <span className="text-green-400 ml-2">
-                  {question.type === 'multiple-choice' 
-                    ? question.options[question.correctAnswer]
-                    : (question.correctAnswer ? 'True' : 'False')
-                  }
-                </span>
-              </p>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
     </motion.div>
   );
 }
