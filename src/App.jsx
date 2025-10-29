@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthProvider, useAuth } from './contexts/AuthContext.jsx';
 import { QuizProvider } from './contexts/QuizContext.jsx';
-import { ThemeProvider } from './contexts/ThemeContext.jsx';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext.jsx';
 import { NotificationProvider } from './contexts/NotificationProvider.jsx';
 import EnhancedLoginPage from './components/auth/EnhancedLoginPage.jsx';
 import EnhancedAdminDashboard from './components/admin/EnhancedAdminDashboard.jsx';
@@ -14,6 +14,7 @@ import EnhancedBackground from './components/common/EnhancedBackground.jsx';
 
 function AppContent() {
   const { user, loading } = useAuth();
+  const { isDarkMode } = useTheme();
 
   if (loading) {
     return <LoadingSpinner />;
@@ -24,7 +25,7 @@ function AppContent() {
   }
 
   return (
-    <EnhancedBackground variant="dark">
+    <EnhancedBackground variant="default">
       <div className="min-h-screen flex flex-col">
         <Header />
         <motion.main 

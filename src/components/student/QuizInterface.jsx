@@ -351,7 +351,7 @@ function QuestionItem({ question, onAnswer, userAnswer, questionNumber, totalQue
   );
 }
 
-export default function StudentQuizInterface({ quizId, onComplete, onCancel }) {
+export default function QuizInterface({ quizId, onComplete, onCancel }) {
   const { quizzes, getQuizzesWithQuestions, getQuizWithQuestions, initializeSampleData, submitQuizAttempt } = useQuiz();
   const { user } = useAuth();
   const [selectedQuiz, setSelectedQuiz] = useState(null);
@@ -494,7 +494,7 @@ export default function StudentQuizInterface({ quizId, onComplete, onCancel }) {
 
     submitQuizAttempt({
       quizId: selectedQuiz.id,
-      studentId: 'student-1',
+      studentId: user?.id || 'anonymous',
       answers: userAnswers,
       score: finalScore.percentage,
       completedAt: new Date()

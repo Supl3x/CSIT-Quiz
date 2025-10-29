@@ -64,7 +64,7 @@ export default function EnhancedLoginPage() {
   };
 
   return (
-    <EnhancedBackground variant="dark">
+    <EnhancedBackground variant="default">
       <div className="min-h-screen flex items-center justify-center p-4 relative">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           {[...Array(20)].map((_, i) => (

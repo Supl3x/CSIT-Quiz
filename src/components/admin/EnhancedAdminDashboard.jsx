@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuiz } from '../../contexts/QuizContext.jsx';
+import { useTheme } from '../../contexts/ThemeContext.jsx';
 import {
   BookOpen,
   Users,
@@ -25,6 +26,7 @@ import AnalyticsDashboard from './AnalyticsDashboard.jsx';
 export default function EnhancedAdminDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const { questions, quizzes, attempts } = useQuiz();
+  const { isDarkMode } = useTheme();
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: BarChart3, color: 'from-cyan-500 to-blue-600' },
@@ -56,10 +58,10 @@ export default function EnhancedAdminDashboard() {
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-slate-700/50 overflow-hidden"
+        className="relative bg-white dark:bg-gray-800 rounded-3xl p-8 shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden"
       >
-        <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 via-blue-500/5 to-indigo-500/5" />
-        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 rounded-full blur-3xl" />
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-indigo-500/5 to-cyan-500/5 dark:from-cyan-500/5 dark:via-blue-500/5 dark:to-indigo-500/5" />
+        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 dark:from-cyan-500/10 dark:to-blue-500/10 rounded-full blur-3xl" />
 
         <div className="relative flex flex-col md:flex-row md:items-center justify-between">
           <div>
@@ -67,16 +69,16 @@ export default function EnhancedAdminDashboard() {
               initial={{ x: -20, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               transition={{ delay: 0.1 }}
-              className="text-4xl font-black text-white mb-2 flex items-center gap-3"
+              className="text-4xl font-black text-gray-900 dark:text-white mb-2 flex items-center gap-3"
             >
-              <Sparkles className="w-10 h-10 text-cyan-400" />
+              <Sparkles className="w-10 h-10 text-blue-600 dark:text-cyan-400" />
               Faculty Dashboard
             </motion.h1>
             <motion.p
               initial={{ x: -20, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               transition={{ delay: 0.2 }}
-              className="text-slate-400 text-lg"
+              className="text-gray-600 dark:text-slate-400 text-lg"
             >
               Manage quizzes, questions, and monitor student performance
             </motion.p>
@@ -87,8 +89,8 @@ export default function EnhancedAdminDashboard() {
             transition={{ delay: 0.3, type: "spring" }}
             className="mt-4 md:mt-0"
           >
-            <div className="flex items-center gap-2 text-sm text-slate-400 bg-slate-800/50 backdrop-blur-xl px-4 py-3 rounded-xl border border-slate-700">
-              <Clock className="w-4 h-4 text-cyan-400" />
+            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-400 bg-white/50 dark:bg-slate-800/50 backdrop-blur-xl px-4 py-3 rounded-xl border border-gray-300 dark:border-slate-700">
+              <Clock className="w-4 h-4 text-blue-600 dark:text-cyan-400" />
               <span>Last updated: {new Date().toLocaleDateString()}</span>
             </div>
           </motion.div>
@@ -99,7 +101,7 @@ export default function EnhancedAdminDashboard() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-700/50 overflow-hidden"
+        className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden"
       >
         <div className="flex overflow-x-auto">
           {tabs.map((tab, index) => (
@@ -113,8 +115,8 @@ export default function EnhancedAdminDashboard() {
               onClick={() => setActiveTab(tab.id)}
               className={`relative flex items-center gap-3 px-8 py-5 font-semibold text-sm whitespace-nowrap transition-all ${
                 activeTab === tab.id
-                  ? 'text-white'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'text-gray-900 dark:text-white'
+                  : 'text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200'
               }`}
             >
               {activeTab === tab.id && (
@@ -155,19 +157,19 @@ export default function EnhancedAdminDashboard() {
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: index * 0.1 }}
                   whileHover={{ scale: 1.05, y: -5 }}
-                  className="group relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-slate-700/50 overflow-hidden"
+                  className="group relative bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden"
                 >
                   <div className={`absolute inset-0 bg-gradient-to-br ${stat.bgColor} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
                   <div className={`absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-br ${stat.color} rounded-full blur-2xl opacity-20 group-hover:opacity-30 transition-opacity`} />
 
                   <div className="relative flex items-center justify-between">
                     <div>
-                      <p className="text-slate-400 text-sm font-medium mb-2">{stat.label}</p>
+                      <p className="text-gray-600 dark:text-slate-400 text-sm font-medium mb-2">{stat.label}</p>
                       <motion.p
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         transition={{ type: "spring", delay: 0.2 + index * 0.1 }}
-                        className="text-4xl font-black text-white"
+                        className="text-4xl font-black text-gray-900 dark:text-white"
                       >
                         {stat.value}
                       </motion.p>
@@ -188,10 +190,10 @@ export default function EnhancedAdminDashboard() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-slate-700/50"
+              className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-2xl border border-gray-200 dark:border-gray-700"
             >
-              <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
-                <Target className="w-6 h-6 text-cyan-400" />
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+                <Target className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                 Questions by Category
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
@@ -201,18 +203,18 @@ export default function EnhancedAdminDashboard() {
                     initial={{ opacity: 0, scale: 0 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.5 + index * 0.05, type: "spring" }}
-                    whileHover={{ scale: 1.1, rotate: 5 }}
-                    className="text-center p-6 bg-gradient-to-br from-slate-700/50 to-slate-800/50 rounded-2xl border border-slate-600/50 hover:border-cyan-500/50 transition-all"
+                    whileHover={{ scale: 1.05 }}
+                    className="text-center p-6 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 transition-all shadow-lg"
                   >
                     <motion.p
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       transition={{ delay: 0.6 + index * 0.05, type: "spring" }}
-                      className="text-4xl font-black text-white mb-2"
+                      className="text-4xl font-black text-gray-900 dark:text-white mb-2"
                     >
                       {count}
                     </motion.p>
-                    <p className="text-sm text-slate-400 font-medium">{category}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">{category}</p>
                   </motion.div>
                 ))}
               </div>
@@ -222,18 +224,18 @@ export default function EnhancedAdminDashboard() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6 }}
-              className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-slate-700/50"
+              className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-2xl border border-gray-200 dark:border-gray-700"
             >
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-2xl font-bold text-white flex items-center gap-2">
-                  <Zap className="w-6 h-6 text-cyan-400" />
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  <Zap className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                   Recent Quizzes
                 </h3>
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setActiveTab('quizzes')}
-                  className="text-cyan-400 hover:text-cyan-300 text-sm font-semibold transition-colors"
+                  className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-semibold transition-colors"
                 >
                   View All →
                 </motion.button>
@@ -246,11 +248,11 @@ export default function EnhancedAdminDashboard() {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.7 + index * 0.05 }}
                     whileHover={{ x: 5, scale: 1.01 }}
-                    className="flex items-center justify-between p-4 bg-slate-800/50 rounded-xl border border-slate-700/50 hover:border-slate-600/50 transition-all"
+                    className="flex items-center justify-between p-4 bg-gray-100 dark:bg-slate-800/50 rounded-xl border border-gray-300 dark:border-slate-700/50 hover:border-gray-400 dark:hover:border-slate-600/50 transition-all"
                   >
                     <div>
-                      <h4 className="font-semibold text-white">{quiz.title}</h4>
-                      <p className="text-sm text-slate-400">
+                      <h4 className="font-semibold text-gray-900 dark:text-white">{quiz.title}</h4>
+                      <p className="text-sm text-gray-600 dark:text-slate-400">
                         {quiz.category} • {quiz.totalQuestions} questions • {quiz.duration} minutes
                       </p>
                     </div>
@@ -258,8 +260,8 @@ export default function EnhancedAdminDashboard() {
                       whileHover={{ scale: 1.1 }}
                       className={`px-3 py-1 rounded-full text-xs font-bold ${
                         quiz.isActive
-                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                          : 'bg-slate-700/50 text-slate-300 border border-slate-600/50'
+                          ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30'
+                          : 'bg-gray-200 dark:bg-slate-700/50 text-gray-600 dark:text-slate-300 border border-gray-300 dark:border-slate-600/50'
                       }`}
                     >
                       {quiz.isActive ? 'Active' : 'Inactive'}
