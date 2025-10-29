@@ -7,4 +7,20 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['lucide-react'],
   },
+  build: {
+    outDir: 'dist',
+    sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor': ['react', 'react-dom', 'framer-motion'],
+          'ui': ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities'],
+        }
+      }
+    }
+  },
+  server: {
+    host: true,
+    port: 5173
+  }
 });
