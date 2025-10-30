@@ -76,29 +76,39 @@ export default function QuizManager() {
                   {Array.isArray(quiz.categories) && quiz.categories.length > 0 ? (
                     <div className="flex flex-wrap gap-1">
                       {quiz.categories.map(cat => (
-                        <span key={cat} className="text-xs font-medium px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900 dark:text-blue-200">{cat}</span>
+                        <span key={cat} className="text-xs font-medium px-2 py-1 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">{cat}</span>
                       ))}
                     </div>
                   ) : (
-                    <span className="text-xs font-medium px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900 dark:text-blue-200">{quiz.category}</span>
+                    <span className="text-xs font-medium px-2 py-1 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">{quiz.category}</span>
                   )}
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={() => handleEdit(quiz)}><Edit className="w-4 h-4" /></button>
-                  <button onClick={() => handleDelete(quiz.id)}><Trash2 className="w-4 h-4" /></button>
+                  <button 
+                    onClick={() => handleEdit(quiz)}
+                    className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </button>
+                  <button 
+                    onClick={() => handleDelete(quiz.id)}
+                    className="p-2 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
 
               <div className="p-6 space-y-3">
-                <div className="flex justify-between text-sm text-gray-600 dark:text-gray-300">
+                <div className="flex justify-between text-sm text-gray-800 dark:text-gray-300">
                   <span>{quiz.totalQuestions} questions</span>
                   <span>{quiz.duration} min</span>
                 </div>
 
                 {stats && (
                   <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-sm">
-                    <div className="flex justify-between"><span>Attempts:</span><span>{stats.totalAttempts}</span></div>
-                    <div className="flex justify-between"><span>Avg Score:</span><span>{Math.round(stats.averageScore)}%</span></div>
+                    <div className="flex justify-between text-gray-800 dark:text-gray-300"><span>Attempts:</span><span>{stats.totalAttempts}</span></div>
+                    <div className="flex justify-between text-gray-800 dark:text-gray-300"><span>Avg Score:</span><span>{Math.round(stats.averageScore)}%</span></div>
                   </div>
                 )}
 
@@ -108,7 +118,11 @@ export default function QuizManager() {
                   </span>
                   <button
                     onClick={() => toggleQuizStatus(quiz)}
-                    className={`flex items-center gap-1 text-sm px-3 py-1 rounded-lg ${quiz.isActive ? 'text-red-600' : 'text-green-600'}`}
+                    className={`flex items-center gap-1 text-sm px-3 py-1 rounded-lg font-medium transition-colors ${
+                      quiz.isActive 
+                        ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20' 
+                        : 'text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20'
+                    }`}
                   >
                     {quiz.isActive ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                     <span>{quiz.isActive ? 'Deactivate' : 'Activate'}</span>
