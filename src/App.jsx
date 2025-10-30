@@ -21,7 +21,16 @@ function AppContent() {
   }
 
   if (!user) {
-    return <EnhancedLoginPage />;
+    return (
+      <EnhancedBackground variant="default">
+        <div className="min-h-screen flex flex-col">
+          <div className="flex-1">
+            <EnhancedLoginPage />
+          </div>
+          <Footer />
+        </div>
+      </EnhancedBackground>
+    );
   }
 
   return (
