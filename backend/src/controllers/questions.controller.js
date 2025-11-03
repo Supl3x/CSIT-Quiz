@@ -66,7 +66,7 @@ const createQuestion = asyncHandler(async (req, res) => {
     choices = [],
     correctAnswer = null,
     acceptableAnswers = [],
-    testCases = [],
+    // testCases = [],
     points = 1,
     difficulty = "medium",
     tags = [],
@@ -79,19 +79,19 @@ const createQuestion = asyncHandler(async (req, res) => {
   const allowedTypes = [
     "mcq",
     "checkbox",
-    "short_answer",
-    "long_answer",
-    "code",
+    // "short_answer",
+    // "long_answer",
+    // "code",
     "drag_drop",
-    "match",
-    "fill_blank",
-    "file_upload",
+    // "match",
+    // "fill_blank",
+    // "file_upload",
     "true_false"
   ];
   if (!allowedTypes.includes(type)) throw new ApiError(400, "Invalid question type");
 
   let normalizedChoices = [];
-  let normalizedTestCases = [];
+  // let normalizedTestCases = [];
 
   if (["mcq", "checkbox", "drag_drop"].includes(type)) {
     normalizedChoices = Array.isArray(choices)
@@ -104,16 +104,16 @@ const createQuestion = asyncHandler(async (req, res) => {
       : [];
   }
 
-  if (type === "code") {
-  normalizedTestCases = Array.isArray(testCases)
-    ? testCases.map((t) => ({
-        input: t.input || "",
-        expectedOutput: t.expectedOutput || "",
-        weight: typeof t.weight === "number" ? t.weight : 1,
-        hidden: !!t.hidden,
-      }))
-    : [];
-  }
+  // if (type === "code") {
+  // normalizedTestCases = Array.isArray(testCases)
+  //   ? testCases.map((t) => ({
+  //       input: t.input || "",
+  //       expectedOutput: t.expectedOutput || "",
+  //       weight: typeof t.weight === "number" ? t.weight : 1,
+  //       hidden: !!t.hidden,
+  //     }))
+  //   : [];
+  // }
 
   let tfCorrectAnswer = null;
   if (type === "true_false") {
@@ -129,7 +129,7 @@ const createQuestion = asyncHandler(async (req, res) => {
     choices: normalizedChoices,
     correctAnswer: type === "true_false" ? tfCorrectAnswer : correctAnswer || null,
     acceptableAnswers: Array.isArray(acceptableAnswers) ? acceptableAnswers : [],
-    testCases: normalizedTestCases,
+    // testCases: normalizedTestCases,
     points: Number(points) || 1,
     difficulty,
     tags: Array.isArray(tags) ? tags : [],
@@ -142,7 +142,7 @@ const createQuestion = asyncHandler(async (req, res) => {
   const populated = await populateAuthor(Question.findById(question._id));
   return res
     .status(201)
-    .json(new ApiResponse(201, { question: sanitizeQuestionForClient(await populated, actor) }, "Question created"));
+    .json(new ApiResponse(201, { question: sanitizeQuestionForClient(populated, actor) }, "Question created"));
 });
 
 
@@ -166,7 +166,7 @@ const updateQuestion = asyncHandler(async (req, res) => {
     "choices",
     "correctAnswer",
     "acceptableAnswers",
-    "testCases",
+    // "testCases",
     "points",
     "difficulty",
     "tags",
@@ -192,14 +192,14 @@ const updateQuestion = asyncHandler(async (req, res) => {
     }));
   }
 
-  if (Array.isArray(updates.testCases)) {
-    updates.testCases = updates.testCases.map((t) => ({
-      input: t.input || "",
-      expectedOutput: t.expectedOutput || "",
-      weight: typeof t.weight === "number" ? t.weight : 1,
-      hidden: !!t.hidden,
-    }));
-  }
+  // if (Array.isArray(updates.testCases)) {
+  //   updates.testCases = updates.testCases.map((t) => ({
+  //     input: t.input || "",
+  //     expectedOutput: t.expectedOutput || "",
+  //     weight: typeof t.weight === "number" ? t.weight : 1,
+  //     hidden: !!t.hidden,
+  //   }));
+  // }
 
 
   if (updates.type === "true_false") {
@@ -207,7 +207,7 @@ const updateQuestion = asyncHandler(async (req, res) => {
       throw new ApiError(400, "For true/false questions, correctAnswer must be true or false");
     }
     updates.choices = [];
-    updates.testCases = [];
+    // updates.testCases = [];
   }
   const updated = await Question.findByIdAndUpdate(questionId, { $set: updates }, { new: true, runValidators: true });
   const populated = await populateAuthor(Question.findById(updated._id));
@@ -367,59 +367,59 @@ const removeChoice = asyncHandler(async (req, res) => {
 });
 
 
-const addTestCase = asyncHandler(async (req, res) => {
-  const actor = req.user;
-  if (!actor) throw new ApiError(401, "Unauthorized");
-  const { questionId } = req.params;
-  if (!Types.ObjectId.isValid(questionId)) throw new ApiError(400, "Invalid question id");
+// const addTestCase = asyncHandler(async (req, res) => {
+//   const actor = req.user;
+//   if (!actor) throw new ApiError(401, "Unauthorized");
+//   const { questionId } = req.params;
+//   if (!Types.ObjectId.isValid(questionId)) throw new ApiError(400, "Invalid question id");
 
-  const q = await Question.findById(questionId);
-  if (!q) throw new ApiError(404, "Question not found");
-  if (q.type !== "code") throw new ApiError(400, "Testcases only valid for code questions");
+//   const q = await Question.findById(questionId);
+//   if (!q) throw new ApiError(404, "Question not found");
+//   if (q.type !== "code") throw new ApiError(400, "Testcases only valid for code questions");
 
-  const isAuthor = String(q.author) === String(actor._id);
-  if (!(actor.role === "admin" || isAuthor)) throw new ApiError(403, "Only author or admin can add testcases");
+//   const isAuthor = String(q.author) === String(actor._id);
+//   if (!(actor.role === "admin" || isAuthor)) throw new ApiError(403, "Only author or admin can add testcases");
 
-  const { input = "", expectedOutput = "", weight = 1, hidden = false } = req.body;
-  q.testCases.push({ input: String(input), expectedOutput: String(expectedOutput), weight: Number(weight) || 1, hidden: !!hidden });
-  await q.save();
+//   const { input = "", expectedOutput = "", weight = 1, hidden = false } = req.body;
+//   q.testCases.push({ input: String(input), expectedOutput: String(expectedOutput), weight: Number(weight) || 1, hidden: !!hidden });
+//   await q.save();
 
-  const populated = await populateAuthor(Question.findById(q._id));
-  return res.status(201).json(new ApiResponse(201, { question: sanitizeQuestionForClient(await populated, actor) }, "Testcase added"));
-});
+//   const populated = await populateAuthor(Question.findById(q._id));
+//   return res.status(201).json(new ApiResponse(201, { question: sanitizeQuestionForClient(await populated, actor) }, "Testcase added"));
+// });
 
 
-const removeTestCase = asyncHandler(async (req, res) => {
-  const actor = req.user;
-  if (!actor) throw new ApiError(401, "Unauthorized");
-  const { questionId, tcId } = req.params;
+// const removeTestCase = asyncHandler(async (req, res) => {
+//   const actor = req.user;
+//   if (!actor) throw new ApiError(401, "Unauthorized");
+//   const { questionId, tcId } = req.params;
 
-  if (!Types.ObjectId.isValid(questionId)) throw new ApiError(400, "Invalid question id");
-  const q = await Question.findById(questionId);
-  if (!q) throw new ApiError(404, "Question not found");
-  if (q.type !== "code") throw new ApiError(400, "Testcases only valid for code questions");
+//   if (!Types.ObjectId.isValid(questionId)) throw new ApiError(400, "Invalid question id");
+//   const q = await Question.findById(questionId);
+//   if (!q) throw new ApiError(404, "Question not found");
+//   if (q.type !== "code") throw new ApiError(400, "Testcases only valid for code questions");
 
-  const isAuthor = String(q.author) === String(actor._id);
-  if (!(actor.role === "admin" || isAuthor)) throw new ApiError(403, "Only author or admin can remove testcases");
+//   const isAuthor = String(q.author) === String(actor._id);
+//   if (!(actor.role === "admin" || isAuthor)) throw new ApiError(403, "Only author or admin can remove testcases");
 
-  // try by _id first
-  const idxById = q.testCases.findIndex((t) => String(t._id) === String(tcId));
-  if (idxById !== -1) {
-    q.testCases.splice(idxById, 1);
-    await q.save();
-  } else {
-    const index = parseInt(tcId, 10);
-    if (!Number.isNaN(index) && index >= 0 && index < q.testCases.length) {
-      q.testCases.splice(index, 1);
-      await q.save();
-    } else {
-      throw new ApiError(404, "Testcase not found");
-    }
-  }
+//   // try by _id first
+//   const idxById = q.testCases.findIndex((t) => String(t._id) === String(tcId));
+//   if (idxById !== -1) {
+//     q.testCases.splice(idxById, 1);
+//     await q.save();
+//   } else {
+//     const index = parseInt(tcId, 10);
+//     if (!Number.isNaN(index) && index >= 0 && index < q.testCases.length) {
+//       q.testCases.splice(index, 1);
+//       await q.save();
+//     } else {
+//       throw new ApiError(404, "Testcase not found");
+//     }
+//   }
 
-  const populated = await populateAuthor(Question.findById(q._id));
-  return res.status(200).json(new ApiResponse(200, { question: sanitizeQuestionForClient(await populated, actor) }, "Testcase removed"));
-});
+//   const populated = await populateAuthor(Question.findById(q._id));
+//   return res.status(200).json(new ApiResponse(200, { question: sanitizeQuestionForClient(await populated, actor) }, "Testcase removed"));
+// });
 
 const bulkCreateQuestions = asyncHandler(async (req, res) => {
   const actor = req.user;
@@ -446,9 +446,9 @@ const bulkCreateQuestions = asyncHandler(async (req, res) => {
         choices: Array.isArray(q.choices) ? q.choices.map((c, i) => ({ text: c.text || "", imageUrl: c.imageUrl || null, order: c.order || i })) : [],
         correctAnswer: q.correctAnswer || null,
         acceptableAnswers: Array.isArray(q.acceptableAnswers) ? q.acceptableAnswers : [],
-        testCases: Array.isArray(q.testCases)
-          ? q.testCases.map((t) => ({ input: t.input || "", expectedOutput: t.expectedOutput || "", weight: t.weight || 1, hidden: !!t.hidden }))
-          : [],
+        // testCases: Array.isArray(q.testCases)
+        //   ? q.testCases.map((t) => ({ input: t.input || "", expectedOutput: t.expectedOutput || "", weight: t.weight || 1, hidden: !!t.hidden }))
+        //   : [],
         points: Number(q.points) || 1,
         difficulty: q.difficulty || "medium",
         tags: Array.isArray(q.tags) ? q.tags : [],
@@ -544,7 +544,6 @@ const removeQuestionsFromCourse = asyncHandler(async (req, res) => {
   const course = await Course.findById(courseId);
   if (!course) throw new ApiError(404, "Course not found");
 
-  // Allow only admin or instructors of the course
   const isInstructor = course.instructors
     .map(String)
     .includes(String(actor._id));
@@ -751,8 +750,8 @@ export {
   restoreQuestion,
   addChoice,
   removeChoice,
-  addTestCase,
-  removeTestCase,
+  // addTestCase,
+  // removeTestCase,
   bulkCreateQuestions,
   assignQuestionsToCourse,
   removeQuestionsFromCourse,

@@ -2,7 +2,64 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuiz } from '../../contexts/QuizContext.jsx';
 import { useAuth } from '../../contexts/AuthContext.jsx';
-import { Clock, ChevronLeft, ChevronRight, Flag, CheckCircle, XCircle, Zap, Star, Award as AwardIcon, TrendingUp as TrendIcon } from 'lucide-react';
+import { Clock, ChevronLeft, ChevronRight, Flag, CheckCircle, XCircle, Zap, Star, Award as AwardIcon, TrendingUp as TrendIcon, GripVertical } from 'lucide-react';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+
+function SortableOptionItem({ id, option, isSelected }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : 0,
+    opacity: isDragging ? 0.8 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`group relative w-full text-left p-5 rounded-2xl border-2 transition-all duration-300 overflow-hidden ${
+        isSelected
+          ? 'border-cyan-500 bg-gradient-to-r from-cyan-900/40 to-blue-900/40 shadow-lg shadow-cyan-500/20'
+          : 'border-slate-700 bg-slate-800/50 hover:border-slate-600 hover:bg-slate-800/70'
+      }`}
+    >
+      <div className="relative flex items-center gap-4">
+        <button
+          type="button"
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing text-slate-400 hover:text-white"
+        >
+          <GripVertical className="w-5 h-5" />
+        </button>
+        <span className="text-base font-medium text-slate-300">{option.text}</span>
+      </div>
+    </div>
+  );
+}
 
 export default function QuizInterface({ quizId, onComplete, onCancel }) {
   const { user } = useAuth();
@@ -20,6 +77,11 @@ export default function QuizInterface({ quizId, onComplete, onCancel }) {
   const quiz = quizzes.find(q => q._id === quizId);
   const startTime = React.useRef(Date.now());
 
+
+  const sensors = useSensors(
+    useSensor(PointerSensor)
+  );
+
   useEffect(() => {
     if (quiz) {
       loadQuizQuestions();
@@ -29,10 +91,8 @@ export default function QuizInterface({ quizId, onComplete, onCancel }) {
   const loadQuizQuestions = async () => {
     setLoading(true);
     try {
-      // const questions = await getQuizQuestions(quizId);
-      // setQuizQuestions(questions);
-      // setTimeLeft(quiz.duration * 60);
       const attemptData = await startQuizAttempt(quizId);
+      console.log("✅ attemptData received:", attemptData); 
       setAttemptId(attemptData.attemptId);
 
       const formattedQuestions = attemptData.questions.map(q => ({
@@ -41,11 +101,25 @@ export default function QuizInterface({ quizId, onComplete, onCancel }) {
         options: q.snapshot.choices,
         category: q.snapshot.tags ? q.snapshot.tags[0] : 'General', 
         points: q.snapshot.points,
-        difficulty: q.snapshot.difficulty
+        difficulty: q.snapshot.difficulty,
+        type: q.snapshot.type,
       }));
 
       setQuizQuestions(formattedQuestions);
       setTimeLeft(quiz.durationMinutes * 60);
+
+      const initialAnswers = {};
+      formattedQuestions.forEach(q => {
+        if (q.type === 'checkbox') {
+          initialAnswers[q._id] = []; // Checkbox answers are arrays
+        } else if (q.type === 'drag_drop') {
+          // Store the initial shuffled order for the user
+          initialAnswers[q._id] = [...q.options].sort(() => Math.random() - 0.5); 
+        } else {
+          initialAnswers[q._id] = null; // MCQ / true_false
+        }
+      });
+      setAnswers(initialAnswers);
 
     } catch (error) {
       console.error('Error starting quiz ', error);
@@ -56,85 +130,89 @@ export default function QuizInterface({ quizId, onComplete, onCancel }) {
 
   useEffect(() => {
     if(loading) return;
-    if (timeLeft > 0) {
+    if (timeLeft > 0 && !isSubmitting && !showResults) {
       const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
       return () => clearTimeout(timer);
-    } else if (timeLeft === 0 && quizQuestions.length > 0 && !isSubmitting && !showResults) {
+    } else if (timeLeft === 0 && attemptId && !isSubmitting && !showResults) {
       handleSubmit();
     }
   }, [timeLeft]);
 
-  const handleAnswerSelect = (questionId, choiceId) => {
-    setAnswers(prev => ({ ...prev, [questionId]: choiceId }));
+  const handleAnswerSelect = (questionId, choiceId, questionType) => {
+    setAnswers(prev => {
+      const newAnswers = { ...prev };
+      
+      if (questionType === 'mcq' || questionType === 'true_false') {
+        newAnswers[questionId] = choiceId;
+      } 
+      else if (questionType === 'checkbox') {
+        const currentChoices = prev[questionId] || [];
+        if (currentChoices.includes(choiceId)) {
+          newAnswers[questionId] = currentChoices.filter(id => id !== choiceId);
+        } else {
+          newAnswers[questionId] = [...currentChoices, choiceId];
+        }
+      }
+      
+      return newAnswers;
+    });
+  };
+
+  const handleDragEnd = (event, questionId) => {
+    const { active, over } = event;
+
+    if (active.id !== over.id) {
+      setAnswers(prev => {
+        const oldItems = prev[questionId];
+        const oldIndex = oldItems.findIndex(item => item._id === active.id);
+        const newIndex = oldItems.findIndex(item => item._id === over.id);
+        
+        return {
+          ...prev,
+          [questionId]: arrayMove(oldItems, oldIndex, newIndex),
+        };
+      });
+    }
   };
 
   const handleSubmit = async () => {
     if (isSubmitting || !attemptId) return;
     
     setIsSubmitting(true);
-    
-    // const timeSpent = Math.floor((Date.now() - startTime.current) / 1000);
-    
-    // Calculate score and category breakdown
-    // let correctAnswers = 0;
-    // const categoryScores = {};
-    
-    // quizQuestions.forEach(question => {
-    //   const isCorrect = answers[question.id] === question.correctAnswer;
-    //   if (isCorrect) correctAnswers++;
-      
-    //   if (!categoryScores[question.category]) {
-    //     categoryScores[question.category] = { correct: 0, total: 0 };
-    //   }
-    //   categoryScores[question.category].total++;
-    //   if (isCorrect) {
-    //     categoryScores[question.category].correct++;
-    //   }
-    // });
 
-    const backendAnswers = Object.keys(answers).map(qId => ({
-      questionId: qId,
-      answer: {
-        selectedChoice: answers[qId] // This is the choice _id we saved
+    const backendAnswers = quizQuestions.map(question => {
+      const questionId = question._id;
+      const studentAnswer = answers[questionId]; 
+      const answerPayload = {};
+
+      switch (question.type) {
+        case 'mcq':
+          answerPayload.selectedChoice = studentAnswer;
+          break;
+        
+        case 'checkbox':
+          answerPayload.selectedChoices = studentAnswer || [];
+          break;
+          
+        case 'true_false':
+          answerPayload.text = studentAnswer;
+          break;
+          
+        case 'drag_drop':
+          answerPayload.selectedChoices = (studentAnswer || []).map(opt => opt._id);
+          break;
+
+        default:
+          answerPayload.raw = studentAnswer;
       }
-    }));
 
-    // const score = Math.round((correctAnswers / quizQuestions.length) * 100);
-    
-  //   const attempt = {
-  //     quizId,
-  //     studentId: user?.id || '',
-  //     studentName: user?.name || 'Student',
-  //     answers,
-  //     score,
-  //     totalQuestions: quizQuestions.length,
-  //     timeSpent,
-  //     categoryScores
-  //   };
-
-  //   await submitQuizAttempt(attempt);
-    
-  //   // Show results
-  //   const resultsData = {
-  //     score,
-  //     correctAnswers,
-  //     totalQuestions: quizQuestions.length,
-  //     timeSpent,
-  //     categoryScores,
-  //     questions: quizQuestions.map(q => ({
-  //       ...q,
-  //       userAnswer: answers[q.id],
-  //       isCorrect: answers[q.id] === q.correctAnswer
-  //     }))
-  //   };
-    
-  //   setResults(resultsData);
-  //   setShowResults(true);
-  //   setIsSubmitting(false);
-  // };
+      return {
+        questionId: questionId,
+        answer: answerPayload
+      };
+    });
 
     try {
-      // 2. Submit answers to the backend for secure grading
       const gradedAttempt = await submitQuizAttempt(attemptId, backendAnswers);
 
 
@@ -150,22 +228,23 @@ export default function QuizInterface({ quizId, onComplete, onCancel }) {
         }
       });
 
-      // 3. Use the backend's results to show the results page
-      // The backend returns the full, graded attempt object
+      const totalScore = gradedAttempt.totalScore || 0;
+      const maxScore = gradedAttempt.maxScore || 0;
+      const percentageScore = (maxScore > 0) ? (totalScore / maxScore) * 100 : 0;
+
       const resultsData = {
-        score: gradedAttempt.totalScore,
+        score: Math.round(percentageScore),
         correctAnswers: gradedAttempt.questions.filter(q => q.autoScore > 0).length,
         totalQuestions: gradedAttempt.questions.length,
         timeSpent: gradedAttempt.timeTakenSeconds,
         categoryScores: gradedAttempt.categoryScores,
-        questions: [] 
+        questions: [], 
       };
 
       setResults(resultsData);
       setShowResults(true);
     } catch (error) {
       console.error("Error submitting quiz:", error);
-      // Show an error to the user
     } finally {
       setIsSubmitting(false);
     }
@@ -256,7 +335,7 @@ export default function QuizInterface({ quizId, onComplete, onCancel }) {
               transition={{ type: "spring", delay: 0.6 }}
               className="text-7xl font-black mb-2 bg-white/20 backdrop-blur-sm rounded-2xl py-6 px-8 inline-block"
             >
-              {results.totalScore}%
+              {results.score}%
             </motion.div>
             <motion.p
               initial={{ y: 20, opacity: 0 }}
@@ -277,8 +356,8 @@ export default function QuizInterface({ quizId, onComplete, onCancel }) {
             className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
           >
             {[
-              { icon: Star, label: 'Score', value: `${results.totalScore}%`, color: 'cyan' },
-              { icon: Clock, label: 'Time', value: `${Math.floor(results.timeTakenSeconds / 60)}:${(results.timeTakenSeconds % 60).toString().padStart(2, '0')}`, color: 'purple' },
+              { icon: Star, label: 'Score', value: `${results.score}%`, color: 'cyan' },
+              { icon: Clock, label: 'Time', value: `${Math.floor(results.timeSpent / 60)}:${(results.timeTakenSeconds % 60).toString().padStart(2, '0')}`, color: 'purple' },
               { icon: Zap, label: 'Accuracy', value: `${Math.round((results.correctAnswers / results.totalQuestions) * 100)}%`, color: 'pink' }
             ].map((stat, index) => (
               <motion.div
@@ -459,6 +538,167 @@ export default function QuizInterface({ quizId, onComplete, onCancel }) {
      );
   }
 
+  const renderAnswerInputs = () => {
+    const questionId = currentQuestion._id;
+    const questionType = currentQuestion.type;
+    const currentAnswer = answers[questionId];
+
+    switch (questionType) {
+      case 'mcq':
+        return (
+          <div className="space-y-4">
+            {currentQuestion.options.map((option, index) => (
+              <motion.button
+                key={option._id}
+                initial={{ opacity: 0, x: -50 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.1 + index * 0.05 }}
+                whileHover={{ scale: 1.02, x: 5 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => handleAnswerSelect(questionId, option._id, 'mcq')}
+                className={`group relative w-full text-left p-5 rounded-2xl border-2 transition-all duration-300 overflow-hidden ${
+                  currentAnswer === option._id
+                    ? 'border-cyan-500 bg-gradient-to-r from-cyan-900/40 to-blue-900/40 shadow-lg shadow-cyan-500/20'
+                    : 'border-slate-700 bg-slate-800/50 hover:border-slate-600 hover:bg-slate-800/70'
+                }`}
+              >
+                {/* ... (rest of button JSX) ... */}
+                <div className="relative flex items-center gap-4">
+                    <motion.div
+                      animate={{
+                        scale: currentAnswer === option._id ? [1, 1.2, 1] : 1,
+                      }}
+                      className={`w-10 h-10 rounded-xl border-2 flex items-center justify-center text-sm font-bold ${
+                        currentAnswer === option._id
+                          ? 'border-cyan-400 bg-cyan-500 text-white shadow-lg shadow-cyan-500/50'
+                          : 'border-slate-600 bg-slate-700/50 text-slate-400 group-hover:border-slate-500'
+                      }`}
+                    >
+                      {String.fromCharCode(65 + index)}
+                    </motion.div>
+                    <span className={`text-base font-medium ${
+                      currentAnswer === option._id ? 'text-white' : 'text-slate-300'
+                    }`}>{option.text}</span>
+                  </div>
+              </motion.button>
+            ))}
+          </div>
+        );
+
+      case 'checkbox':
+        return (
+          <div className="space-y-4">
+            {currentQuestion.options.map((option, index) => (
+              <motion.button
+                key={option._id}
+                initial={{ opacity: 0, x: -50 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.1 + index * 0.05 }}
+                whileHover={{ scale: 1.02, x: 5 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => handleAnswerSelect(questionId, option._id, 'checkbox')}
+                className={`group relative w-full text-left p-5 rounded-2xl border-2 transition-all duration-300 overflow-hidden ${
+                  currentAnswer?.includes(option._id)
+                    ? 'border-cyan-500 bg-gradient-to-r from-cyan-900/40 to-blue-900/40 shadow-lg shadow-cyan-500/20'
+                    : 'border-slate-700 bg-slate-800/50 hover:border-slate-600 hover:bg-slate-800/70'
+                }`}
+              >
+                <div className="relative flex items-center gap-4">
+                  <motion.div
+                    animate={{
+                      scale: currentAnswer?.includes(option._id) ? [1, 1.2, 1] : 1,
+                    }}
+                    className={`w-10 h-10 rounded-xl border-2 flex items-center justify-center text-sm font-bold ${
+                      currentAnswer?.includes(option._id)
+                        ? 'border-cyan-400 bg-cyan-500 text-white shadow-lg shadow-cyan-500/50'
+                        : 'border-slate-600 bg-slate-700/50 text-slate-400 group-hover:border-slate-500'
+                    }`}
+                  >
+                    {/* Show checkmark if selected */}
+                    {currentAnswer?.includes(option._id) ? '✓' : String.fromCharCode(65 + index)}
+                  </motion.div>
+                  <span className={`text-base font-medium ${
+                    currentAnswer?.includes(option._id) ? 'text-white' : 'text-slate-300'
+                  }`}>{option.text}</span>
+                </div>
+              </motion.button>
+            ))}
+          </div>
+        );
+        
+      case 'true_false':
+        const tfOptions = [
+          { _id: 'true', text: 'True' },
+          { _id: 'false', text: 'False' }
+        ];
+        return (
+          <div className="space-y-4">
+            {tfOptions.map((option, index) => (
+              <motion.button
+                key={option._id}
+                initial={{ opacity: 0, x: -50 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.1 + index * 0.05 }}
+                whileHover={{ scale: 1.02, x: 5 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => handleAnswerSelect(questionId, option._id, 'true_false')}
+                className={`group relative w-full text-left p-5 rounded-2xl border-2 transition-all duration-300 overflow-hidden ${
+                  currentAnswer === option._id
+                    ? 'border-cyan-500 bg-gradient-to-r from-cyan-900/40 to-blue-900/40 shadow-lg shadow-cyan-500/20'
+                    : 'border-slate-700 bg-slate-800/50 hover:border-slate-600 hover:bg-slate-800/70'
+                }`}
+              >
+                <div className="relative flex items-center gap-4">
+                  <motion.div
+                    className={`w-10 h-10 rounded-xl border-2 flex items-center justify-center text-sm font-bold ${
+                      currentAnswer === option._id
+                        ? 'border-cyan-400 bg-cyan-500 text-white shadow-lg shadow-cyan-500/50'
+                        : 'border-slate-600 bg-slate-700/50 text-slate-400 group-hover:border-slate-500'
+                    }`}
+                  >
+                    {String.fromCharCode(65 + index)}
+                  </motion.div>
+                  <span className={`text-base font-medium ${
+                    currentAnswer === option._id ? 'text-white' : 'text-slate-300'
+                  }`}>{option.text}</span>
+                </div>
+              </motion.button>
+            ))}
+          </div>
+        );
+        
+      case 'drag_drop':
+        const optionIds = currentAnswer.map(opt => opt._id);
+        return (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={(e) => handleDragEnd(e, questionId)}
+          >
+            <SortableContext
+              items={optionIds}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-4">
+                <p className="text-slate-400 text-sm">Drag items into the correct order.</p>
+                {currentAnswer.map((option, index) => (
+                  <SortableOptionItem
+                    key={option._id}
+                    id={option._id}
+                    option={option}
+                    isSelected={true}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        );
+
+      default:
+        return <p className="text-red-400">Error: Unknown question type "{questionType}"</p>;
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
@@ -565,49 +805,7 @@ export default function QuizInterface({ quizId, onComplete, onCancel }) {
             </motion.div>
           </div>
 
-          <div className="space-y-4">
-            <AnimatePresence mode="wait">
-              {currentQuestion.options.map((option, index) => (
-                <motion.button
-                  key={option._id}
-                  initial={{ opacity: 0, x: -50 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.1 + index * 0.05 }}
-                  whileHover={{ scale: 1.02, x: 5 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => handleAnswerSelect(currentQuestion._id, option._id)}
-                  className={`group relative w-full text-left p-5 rounded-2xl border-2 transition-all duration-300 overflow-hidden ${
-                    answers[currentQuestion.id] === option._id
-                      ? 'border-cyan-500 bg-gradient-to-r from-cyan-900/40 to-blue-900/40 shadow-lg shadow-cyan-500/20'
-                      : 'border-slate-700 bg-slate-800/50 hover:border-slate-600 hover:bg-slate-800/70'
-                  }`}
-                >
-                  <div className={`absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity ${
-                    answers[currentQuestion._id] === option._id ? 'opacity-100' : ''
-                  }`} />
-                  <div className="relative flex items-center gap-4">
-                    <motion.div
-                      animate={{
-                        scale: answers[currentQuestion._id] === option._id ? [1, 1.2, 1] : 1,
-                        rotate: answers[currentQuestion._id] === option._id ? [0, 360] : 0
-                      }}
-                      transition={{ duration: 0.5 }}
-                      className={`w-10 h-10 rounded-xl border-2 flex items-center justify-center text-sm font-bold ${
-                        answers[currentQuestion._id] === option._id
-                          ? 'border-cyan-400 bg-cyan-500 text-white shadow-lg shadow-cyan-500/50'
-                          : 'border-slate-600 bg-slate-700/50 text-slate-400 group-hover:border-slate-500'
-                      }`}
-                    >
-                      {String.fromCharCode(65 + index)}
-                    </motion.div>
-                    <span className={`text-base font-medium ${
-                      answers[currentQuestion._id] === option._id ? 'text-white' : 'text-slate-300'
-                    }`}>{option.text}</span>
-                  </div>
-                </motion.button>
-              ))}
-            </AnimatePresence>
-          </div>
+          {renderAnswerInputs()}
         </motion.div>
 
         <motion.div

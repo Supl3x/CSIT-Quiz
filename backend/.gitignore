@@ -1,17 +1,8 @@
-# Created by https://www.toptal.com/developers/gitignore/api/node
-# Edit at https://www.toptal.com/developers/gitignore?templates=node
 
-### Node ###
 # Logs
 logs
 *.log
 npm-debug.log*
-
-
-report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
-
-
-
 
 # node-gyp build
 build/Release

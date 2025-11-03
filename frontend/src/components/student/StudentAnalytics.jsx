@@ -20,11 +20,17 @@ export default function StudentAnalytics() {
   const studentAttempts = getStudentAttempts(user?._id || '');
   
   const totalAttempts = studentAttempts.length;
+  const attemptsWithPercentage = studentAttempts.map(attempt => {
+    const total = attempt.totalScore || 0;
+    const max = attempt.maxScore || 0;
+    const percentage = (max > 0) ? (total / max) * 100 : 0;
+    return { ...attempt, percentageScore: percentage };
+  });
   const averageScore = totalAttempts > 0 
-    ? Math.round(studentAttempts.reduce((sum, attempt) => sum + attempt.totalScore, 0) / totalAttempts)
+    ? Math.round(attemptsWithPercentage.reduce((sum, attempt) => sum + attempt.percentageScore, 0) / totalAttempts)
     : 0;
   const bestScore = totalAttempts > 0 
-    ? Math.max(...studentAttempts.map(attempt => attempt.totalScore))
+    ? Math.round(Math.max(...attemptsWithPercentage.map(attempt => attempt.percentageScore)))
     : 0;
   const totalTimeSpent = studentAttempts.reduce((sum, attempt) => sum + attempt.timeTakenSeconds, 0);
 
@@ -54,15 +60,15 @@ export default function StudentAnalytics() {
     .filter(([_, performance]) => performance.avgScore >= 80)
     .sort((b, a) => a[1].avgScore - b[1].avgScore);
 
-  const recentAttempts = studentAttempts
-    .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
+  const recentAttempts = attemptsWithPercentage // Use the array with percentages
+    .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()) // Use 'submittedAt' to match model
     .slice(0, 5);
 
   const isImproving = recentAttempts.length >= 2 && 
-    recentAttempts[0].score > recentAttempts[recentAttempts.length - 1].score;
+    recentAttempts[0].percentageScore > recentAttempts[recentAttempts.length - 1].percentageScore; // Compare percentages
 
   const availableQuizzes = quizzes.filter(quiz => quiz.isPublished).length;
-  const completedQuizzes = new Set(studentAttempts.map(attempt => attempt.quiz)).size;
+  const completedQuizzes = new Set(studentAttempts.map(attempt => attempt.quiz?._id)).size;
   const completionRate = availableQuizzes > 0 ? Math.round((completedQuizzes / availableQuizzes) * 100) : 0;
 
   return (
@@ -188,7 +194,7 @@ export default function StudentAnalytics() {
 
               <div className="space-y-4">
                 {recentAttempts.map((attempt) => {
-                  const quiz = quizzes.find(q => q._id === attempt.quiz);
+                  const quiz = quizzes.find(q => q._id === attempt.quiz?._id);
                   return (
                     <div key={attempt._id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                       <div>
@@ -205,7 +211,7 @@ export default function StudentAnalytics() {
                           attempt.totalScore >= 60 ? 'text-yellow-600 dark:text-yellow-400' :
                           'text-red-600 dark:text-red-400'
                         }`}>
-                          {attempt.totalScore}%
+                          {Math.round(attempt.percentageScore)}%
                         </p>
                       </div>
                     </div>

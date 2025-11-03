@@ -30,12 +30,12 @@ const StudentAnswerSchema = new Schema({
   selectedChoices: [{ type: Schema.Types.ObjectId }],
   text: { type: String, default: null },
   fileUrls: [{ type: String }],
-  code: {
-    language: { type: String },
-    source: { type: String },
-    runId: { type: String },
-    result: { type: Schema.Types.Mixed },
-  },
+  // code: {
+  //   language: { type: String },
+  //   source: { type: String },
+  //   runId: { type: String },
+  //   result: { type: Schema.Types.Mixed },
+  // },
   mapping: [{ leftId: Schema.Types.ObjectId, rightId: Schema.Types.ObjectId }], 
   blanks: [{ index: Number, text: String }],
   raw: { type: Schema.Types.Mixed, default: null },
@@ -98,30 +98,45 @@ AttemptSchema.methods.computeAutoGrade = function () {
     let auto = 0;
 
     switch (snapshot.type) {
-      // ---------------------------------
-      // 🟦 SINGLE CHOICE (MCQ)
-      // ---------------------------------
       case "mcq": {
-        const selected = qAttempt.answer?.selectedChoice;
-        if (selected && String(selected) === String(snapshot.correctAnswer)) {
+        const selectedId = qAttempt.answer?.selectedChoice;
+        const correctIndex = snapshot.correctAnswer;
+
+        const correctChoice = (snapshot.choices && typeof correctIndex === "number") ? snapshot.choices[correctIndex] : null;
+        const correctChoiceId = correctChoice ? correctChoice._id : null;
+        if (selectedId && correctChoiceId && String(selectedId) === String(correctChoiceId)) {
           auto = qAttempt.maxScore;
         }
         break;
       }
 
-      // ---------------------------------
-      // 🟩 MULTI CHOICE (Checkbox with partial credit)
-      // ---------------------------------
+      case "true_false": {
+        const expected = snapshot.correctAnswer; 
+        
+        const studentAnswer = (qAttempt.answer?.text || "").trim().toLowerCase(); 
+
+        if (studentAnswer === "true" && expected === true) {
+          auto = qAttempt.maxScore;
+        } else if (studentAnswer === "false" && expected === false) {
+          auto = qAttempt.maxScore;
+        }
+        break;
+      }
+
       case "checkbox": {
-        const expected = Array.isArray(snapshot.correctAnswer) ? snapshot.correctAnswer.map(String) : [];
         const selected = Array.isArray(qAttempt.answer?.selectedChoices) ? qAttempt.answer.selectedChoices.map(String) : [];
+        const correctIndices = Array.isArray(snapshot.correctAnswer) ? snapshot.correctAnswer : [];
 
-        if (expected.length && selected.length) {
-          const correctSelected = selected.filter((id) => expected.includes(id));
-          const incorrectSelected = selected.filter((id) => !expected.includes(id));
+        const expectedIds = (snapshot.choices || [])
+          .filter((choice, index) => correctIndices.includes(index))
+          .map(choice => String(choice._id));
+        
+        if (expectedIds.length > 0) {
+          const correctSelected = selected.filter((id) => expectedIds.includes(id));
+          const incorrectSelected = selected.filter((id) => !expectedIds.includes(id));
 
-          const correctFraction = correctSelected.length / expected.length;
-          const penalty = incorrectSelected.length / expected.length / 2; // penalize over-selections slightly
+          const correctFraction = correctSelected.length / expectedIds.length;
+          const penalty = incorrectSelected.length / expectedIds.length / 2;
 
           const fraction = Math.max(0, correctFraction - penalty);
           auto = Math.round(qAttempt.maxScore * fraction * 100) / 100;
@@ -129,54 +144,70 @@ AttemptSchema.methods.computeAutoGrade = function () {
         break;
       }
 
-      // ---------------------------------
-      // ✍️ SHORT ANSWER (exact or regex match)
-      // ---------------------------------
-      case "short_answer": {
-        const txt = (qAttempt.answer?.text || "").trim();
+      case "drag_drop": {
+        const submittedIds = Array.isArray(qAttempt.answer?.selectedChoices) 
+          ? qAttempt.answer.selectedChoices.map(String) 
+          : [];
+        
+        const correctIds = (snapshot.choices || [])
+          .sort((a, b) => a.order - b.order)
+          .map(choice => String(choice._id));
 
-        if (snapshot.acceptableAnswers && snapshot.acceptableAnswers.length) {
-          const matched = snapshot.acceptableAnswers.some((a) => {
-            if (a.regex) {
-              try {
-                const re = new RegExp(a.text, a.caseSensitive ? "" : "i");
-                return re.test(txt);
-              } catch {
-                return false;
-              }
-            } else {
-              if (a.caseSensitive) return a.text === txt;
-              return a.text.toLowerCase() === txt.toLowerCase();
+        if (submittedIds.length === correctIds.length) {
+          let isCorrect = true;
+          for (let i = 0; i < correctIds.length; i++) {
+            if (submittedIds[i] !== correctIds[i]) {
+              isCorrect = false;
+              break;
             }
-          });
-          if (matched) auto = qAttempt.maxScore;
-        } else {
-          qAttempt.needsManualGrading = true;
+          }
+          
+          if (isCorrect) {
+            auto = qAttempt.maxScore;
+          }
         }
         break;
       }
+      // case "short_answer": {
+      //   const txt = (qAttempt.answer?.text || "").trim();
 
-      // ---------------------------------
-      // 💻 CODE QUESTIONS (using test case weights)
-      // ---------------------------------
-      case "code": {
-        const result = qAttempt.answer?.code?.result;
-        if (result && Array.isArray(result.testcases)) {
-          let sum = 0, totalW = 0;
-          result.testcases.forEach((t) => {
-            sum += t.passed ? (t.weight || 1) : 0;
-            totalW += t.weight || 1;
-          });
-          if (totalW > 0) auto = (qAttempt.maxScore * sum) / totalW;
-        } else {
-          qAttempt.needsManualGrading = true;
-        }
-        break;
-      }
+      //   if (snapshot.acceptableAnswers && snapshot.acceptableAnswers.length) {
+      //     const matched = snapshot.acceptableAnswers.some((a) => {
+      //       if (a.regex) {
+      //         try {
+      //           const re = new RegExp(a.text, a.caseSensitive ? "" : "i");
+      //           return re.test(txt);
+      //         } catch {
+      //           return false;
+      //         }
+      //       } else {
+      //         if (a.caseSensitive) return a.text === txt;
+      //         return a.text.toLowerCase() === txt.toLowerCase();
+      //       }
+      //     });
+      //     if (matched) auto = qAttempt.maxScore;
+      //   } else {
+      //     qAttempt.needsManualGrading = true;
+      //   }
+      //   break;
+      // }
 
-      // ---------------------------------
-      // 🟨 Other question types (manual grading)
-      // ---------------------------------
+
+      // case "code": {
+      //   const result = qAttempt.answer?.code?.result;
+      //   if (result && Array.isArray(result.testcases)) {
+      //     let sum = 0, totalW = 0;
+      //     result.testcases.forEach((t) => {
+      //       sum += t.passed ? (t.weight || 1) : 0;
+      //       totalW += t.weight || 1;
+      //     });
+      //     if (totalW > 0) auto = (qAttempt.maxScore * sum) / totalW;
+      //   } else {
+      //     qAttempt.needsManualGrading = true;
+      //   }
+      //   break;
+      // }
+
       default:
         qAttempt.needsManualGrading = true;
         break;
@@ -191,5 +222,7 @@ AttemptSchema.methods.computeAutoGrade = function () {
   this.totalScore = Math.round((this.totalAutoScore + (this.totalManualScore || 0)) * 100) / 100;
   return this;
 };
+
+
 
 export default model("Attempt", AttemptSchema);

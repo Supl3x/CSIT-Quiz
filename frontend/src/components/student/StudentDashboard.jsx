@@ -175,10 +175,10 @@ export default function StudentDashboard() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {activeQuizzes.slice(0, 6).map((quiz) => {
-                  const hasAttempted = studentAttempts.some(attempt => attempt.quiz._id === quiz._id);
+                  const hasAttempted = studentAttempts.some(attempt => attempt.quiz?._id === quiz._id);
                   const bestAttemptScore = hasAttempted
                     ? Math.max(...studentAttempts
-                        .filter(attempt => attempt.quiz._id === quiz._id)
+                        .filter(attempt => attempt.quiz?._id === quiz._id)
                         .map(attempt => parseFloat(attempt.totalScore)))
                     : null;
 
@@ -238,7 +238,7 @@ export default function StudentDashboard() {
 
               <div className="space-y-4">
                 {recentAttempts.map((attempt) => {
-                  const quiz = quizzes.find(q => q._id === attempt.quiz._id);
+                  const quiz = quizzes.find(q => q._id === attempt.quiz?._id);
                   return (
                     <div key={attempt._id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                       <div>
@@ -289,11 +289,11 @@ export default function StudentDashboard() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {activeQuizzes.map((quiz) => {
-                const hasAttempted = studentAttempts.some(attempt => attempt.quiz._id === quiz._id);
-                const attemptCount = studentAttempts.filter(attempt => attempt.quiz._id === quiz._id).length;
+                const hasAttempted = studentAttempts.some(attempt => attempt.quiz?._id === quiz._id);
+                const attemptCount = studentAttempts.filter(attempt => attempt.quiz?._id === quiz._id).length;
                 const bestScore = hasAttempted
                   ? Math.max(...studentAttempts
-                      .filter(attempt => attempt.quiz._id === quiz._id)
+                      .filter(attempt => attempt.quiz?._id === quiz._id)
                       .map(attempt => parseFloat(attempt.totalScore)))
                   : null;
 

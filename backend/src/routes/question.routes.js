@@ -11,8 +11,8 @@ import {
   restoreQuestion,
   addChoice,
   removeChoice,
-  addTestCase,
-  removeTestCase,
+  // addTestCase,
+  // removeTestCase,
   bulkCreateQuestions,
   assignQuestionsToCourse,
   removeQuestionsFromCourse,
@@ -35,8 +35,8 @@ router.delete("/:questionId", authorizeRoles("teacher"), ensureTeacherProfileCom
 router.patch("/:questionId/restore", authorizeRoles("teacher"), ensureTeacherProfileCompleted, restoreQuestion);
 router.post("/:questionId/choices", authorizeRoles("teacher"), ensureTeacherProfileCompleted, addChoice);
 router.delete("/:questionId/choices/:choiceId", authorizeRoles("teacher"), ensureTeacherProfileCompleted, removeChoice);
-router.post("/:questionId/testcases", authorizeRoles("teacher"), ensureTeacherProfileCompleted, addTestCase);
-router.delete("/:questionId/testcases/:tcId", authorizeRoles("teacher"),ensureTeacherProfileCompleted,removeTestCase);
+// router.post("/:questionId/testcases", authorizeRoles("teacher"), ensureTeacherProfileCompleted, addTestCase);
+// router.delete("/:questionId/testcases/:tcId", authorizeRoles("teacher"),ensureTeacherProfileCompleted,removeTestCase);
 router.post("/course/:courseId/assign", authorizeRoles("teacher"), ensureTeacherProfileCompleted, assignQuestionsToCourse);
 router.post("/course/:courseId/remove", authorizeRoles("teacher"), ensureTeacherProfileCompleted, removeQuestionsFromCourse);
 router.get("/course/:courseId/questions", authorizeRoles("teacher"), ensureTeacherProfileCompleted, listCourseQuestions);

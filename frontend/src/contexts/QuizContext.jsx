@@ -448,7 +448,7 @@ export function QuizProvider({ children }) {
      }
    };
 
-   const deleteQuiz = async (id) => { // Backend uses DELETE for soft delete (isActive=false)
+   const deleteQuiz = async (id) => {
      try {
        const response = await apiClient.delete(`/quiz/${id}`);
        if (response.data?.success) {

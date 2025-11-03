@@ -142,7 +142,7 @@ export default function EnhancedAdminDashboard() {
         </div>
       </motion.div>
 
-      <AnimatePresence mode="wait">
+      <AnimatePresence>
         {activeTab === 'overview' && (
           <motion.div
             key="overview"

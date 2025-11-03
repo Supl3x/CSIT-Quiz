@@ -8,12 +8,12 @@ const ChoiceSchema = new Schema({
   order: { type: Number, default: 0 },
 });
 
-const TestCaseSchema = new Schema({
-  input: { type: String },
-  expectedOutput: { type: String },
-  weight: { type: Number, default: 1 },
-  hidden: { type: Boolean, default: false },
-});
+// const TestCaseSchema = new Schema({
+//   input: { type: String },
+//   expectedOutput: { type: String },
+//   weight: { type: Number, default: 1 },
+//   hidden: { type: Boolean, default: false },
+// });
 
 const QuestionSchema = new Schema(
   {
@@ -25,13 +25,13 @@ const QuestionSchema = new Schema(
       enum: [
         "mcq",
         "checkbox",
-        "short_answer",
-        "long_answer",
-        "code",
+        // "short_answer",
+        // "long_answer",
+        // "code",
         "drag_drop",
-        "match",
-        "fill_blank",
-        "file_upload",
+        // "match",
+        // "fill_blank",
+        // "file_upload",
         "true_false"
       ],
     },
@@ -46,7 +46,7 @@ const QuestionSchema = new Schema(
       },
     ],
 
-    testCases: [TestCaseSchema],
+    // testCases: [TestCaseSchema],
     points: { type: Number, default: 1 },
     difficulty: { type: String, enum: ["easy", "medium", "hard"], default: "medium" },
     tags: [{ type: String, index: true }],

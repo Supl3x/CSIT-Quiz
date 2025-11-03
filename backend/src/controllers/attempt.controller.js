@@ -22,7 +22,7 @@ const snapshotQuestion = (qDoc) => ({
   tags: qDoc.tags || [],
   correctAnswer: qDoc.correctAnswer,
   acceptableAnswers: qDoc.acceptableAnswers,
-  testCases: qDoc.type === "code" ? qDoc.testCases : [],
+  // testCases: qDoc.type === "code" ? qDoc.testCases : [],
   requiresManualGrading: qDoc.requiresManualGrading || false,
 });
 
@@ -99,9 +99,14 @@ const startAttempt = asyncHandler(async (req, res) => {
     maxScore: q.maxScore
   }));
 
+  // This response now correctly includes questions and duration
   return res
     .status(201)
-    .json(new ApiResponse(201, { attemptId: attempt._id, questions: clientQuestions, durationMinutes: quiz.durationMinutes }, "Attempt started successfully"));
+    .json(new ApiResponse(201, { 
+      attemptId: attempt._id, 
+      questions: clientQuestions, 
+      durationMinutes: quiz.durationMinutes 
+    }, "Attempt started successfully"));
 });
 
 
@@ -151,9 +156,10 @@ const submitAttempt = asyncHandler(async (req, res) => {
 
   await attempt.save();
 
+  // Return the full attempt object so the frontend can build the results page
   return res
     .status(200)
-    .json(new ApiResponse(200, { attemptId: attempt._id, totalScore: attempt.totalScore }, "Attempt submitted successfully"));
+    .json(new ApiResponse(200, attempt, "Attempt submitted successfully"));
 });
 
 

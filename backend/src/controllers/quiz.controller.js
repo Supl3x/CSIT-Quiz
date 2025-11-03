@@ -167,6 +167,7 @@ const updateQuiz = asyncHandler(async (req, res) => {
 const deleteQuiz = asyncHandler(async (req, res) => {
   const actor = req.user;
   if (!actor) throw new ApiError(401, "Unauthorized");
+  if(!["teacher", "admin"].includes(actor.role)) throw new ApiError(403, "Only teachers or admins can delete quizzes");
 
   const { quizId } = req.params;
   if (!mongoose.Types.ObjectId.isValid(quizId)) throw new ApiError(400, "Invalid quiz id");
@@ -177,10 +178,9 @@ const deleteQuiz = asyncHandler(async (req, res) => {
   const isAuthor = String(quiz.author) === String(actor._id);
   if (!(actor.role === "admin" || isAuthor)) throw new ApiError(403, "Forbidden");
 
-  quiz.isActive = false;
-  await quiz.save();
+  await Quiz.findByIdAndDelete(quizId);
 
-  return res.status(200).json(new ApiResponse(200, {}, "Quiz archived"));
+  return res.status(200).json(new ApiResponse(200, {}, "Quiz deleted successfully"));
 });
 
 
